@@ -52,6 +52,12 @@ export interface EventDetail {
   category: EventCategory
   venue: Venue
   eventDate: string
+  /** 예매 오픈 시각 */
+  saleStartAt?: string
+  /** 예매 마감 시각 */
+  saleEndAt?: string
+  /** 회차 번호 */
+  roundNumber?: number
   description: string
   thumbnailUrl: string
   sections: EventSection[]
