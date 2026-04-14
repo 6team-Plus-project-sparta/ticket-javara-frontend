@@ -35,8 +35,13 @@ function Header({ isLoggedIn = false, onLogout, navItems = defaultNavItems, sear
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
 
         {/* 로고 */}
-        <Link to="/" className="shrink-0 text-xl font-bold text-blue-600" aria-label="TicketFlow 홈">
-          TicketFlow
+        <Link
+          to="/"
+          className="shrink-0 text-xl font-bold text-blue-600"
+          style={{ fontFamily: "'Jua', sans-serif" }}
+          aria-label="티켓을 JAVA라 홈"
+        >
+          티켓을 JAVA라
         </Link>
 
         {/* 네비게이션 */}

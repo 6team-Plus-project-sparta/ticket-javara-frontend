@@ -11,8 +11,12 @@ function AuthLayout() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
       {/* 로고 */}
-      <Link to="/" className="mb-8 text-2xl font-bold text-blue-600">
-        TicketFlow
+      <Link
+        to="/"
+        className="mb-8 text-2xl font-bold text-blue-600"
+        style={{ fontFamily: "'Jua', sans-serif" }}
+      >
+        티켓을 JAVA라
       </Link>
       {/* 페이지 본문 */}
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-sm border border-gray-100">

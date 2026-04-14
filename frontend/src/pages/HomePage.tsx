@@ -72,7 +72,7 @@ function HeroBanner({ onBookingClick }: { onBookingClick: () => void }) {
       <div className="relative z-10 max-w-xl">
         <p className="mb-2 text-sm font-medium text-blue-200 uppercase tracking-widest">지금 바로 예매하세요</p>
         <h1 className="mb-3 text-3xl font-extrabold leading-tight md:text-4xl">
-          설레는 순간을<br />TicketFlow와 함께
+          설레는 순간을<br />티켓을 JAVA라와 함께
         </h1>
         <p className="mb-6 text-blue-100 text-sm md:text-base">
           콘서트, 뮤지컬, 스포츠까지 — 모든 공연 티켓을 한 곳에서

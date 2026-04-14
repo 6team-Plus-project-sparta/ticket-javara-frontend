@@ -123,7 +123,7 @@ function LoginPage() {
     <div>
       {/* 타이틀 */}
       <h2 className="mb-1 text-xl font-bold text-gray-900">로그인</h2>
-      <p className="mb-6 text-sm text-gray-500">TicketFlow에 오신 것을 환영합니다</p>
+      <p className="mb-6 text-sm text-gray-500">티켓을 JAVA라에 오신 것을 환영합니다</p>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 

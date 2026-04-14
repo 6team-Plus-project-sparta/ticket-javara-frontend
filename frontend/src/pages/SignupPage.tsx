@@ -162,7 +162,7 @@ function SignupPage() {
     <div>
       {/* 타이틀 */}
       <h2 className="mb-1 text-xl font-bold text-gray-900">회원가입</h2>
-      <p className="mb-6 text-sm text-gray-500">TicketFlow 계정을 만들어보세요</p>
+      <p className="mb-6 text-sm text-gray-500">티켓을 JAVA라 계정을 만들어보세요</p>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 
