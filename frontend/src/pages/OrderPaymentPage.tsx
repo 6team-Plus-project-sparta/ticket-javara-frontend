@@ -194,11 +194,12 @@ function OrderPaymentPage() {
   // SeatSelectionPage에서 전달받은 state
   const state = location.state as PaymentLocationState | null
 
-  // state가 없으면 (직접 URL 접근 등) 홈으로 이동
+  // state가 없으면 (직접 URL 접근 / 새로고침) 홈으로 이동
+  // holdTokens는 메모리 state라 새로고침 시 복원 불가 — 좌석 선택부터 다시 해야 함
   useEffect(() => {
     if (!state?.holdTokens?.length) {
-      toast.error('잘못된 접근입니다. 좌석을 먼저 선택해주세요.')
-      navigate('/', { replace: true })
+      toast.error('결제 정보가 없습니다. 좌석을 다시 선택해주세요.')
+      navigate(-1)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getOrder } from '@/api/orders'
 import type { OrderDetail } from '@/types/order'
 import { Button, LoadingSpinner } from '@/components'
@@ -255,11 +255,10 @@ function ConfirmedView({ order }: { order: OrderDetail }) {
 
 function PaymentCompletePage() {
   const { orderId: orderIdParam } = useParams<{ orderId: string }>()
-  const location = useLocation()
   const navigate = useNavigate()
 
-  // URL 파라미터 또는 navigate state에서 orderId 추출
-  const orderId = Number(orderIdParam) || (location.state as { orderId?: number })?.orderId
+  // URL 파라미터에서 orderId 추출 — 새로고침해도 URL param으로 복원됨
+  const orderId = orderIdParam ? Number(orderIdParam) : null
 
   const [order, setOrder]         = useState<OrderDetail | null>(null)
   const [pollCount, setPollCount] = useState(0)

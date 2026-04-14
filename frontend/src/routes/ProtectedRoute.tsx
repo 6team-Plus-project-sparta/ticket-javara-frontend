@@ -12,18 +12,19 @@
  *   </Route>
  */
 
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { LoadingSpinner } from '@/components'
 
 function ProtectedRoute() {
   const { isLoggedIn, isInitializing } = useAuth()
+  const location = useLocation()
 
   // 앱 시작 시 토큰 복원 중 — 판단을 미룬다
   if (isInitializing) return <LoadingSpinner fullScreen />
 
-  // 로그인 안 됨 → /login으로 이동 (현재 경로를 state로 전달해 로그인 후 복귀 가능)
-  if (!isLoggedIn) return <Navigate to="/login" replace />
+  // 로그인 안 됨 → /login으로 이동, 현재 경로를 state.from에 담아 로그인 후 복귀 가능
+  if (!isLoggedIn) return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />
 
   // 로그인 됨 → 자식 라우트 렌더링
   return <Outlet />

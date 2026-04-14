@@ -11,7 +11,7 @@
  */
 
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button, Input } from '@/components'
 import type { AxiosError } from 'axios'
@@ -67,7 +67,11 @@ function getServerErrorMessage(error: unknown): string {
 
 function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
+
+  // ProtectedRoute에서 전달한 원래 경로 — 없으면 홈으로
+  const from = (location.state as { from?: string })?.from ?? '/'
 
   // 폼 입력값
   const [values, setValues] = useState<FormValues>({ email: '', password: '' })
@@ -106,7 +110,8 @@ function LoginPage() {
     try {
       // AuthContext.login() — 토큰 저장 + GET /api/users/me 까지 처리
       await login({ email: values.email, password: values.password })
-      navigate('/', { replace: true })
+      // 로그인 전 접근하려던 페이지로 복귀 (없으면 홈)
+      navigate(from, { replace: true })
     } catch (error) {
       setServerError(getServerErrorMessage(error))
     } finally {

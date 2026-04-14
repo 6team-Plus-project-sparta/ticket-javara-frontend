@@ -412,9 +412,13 @@ function SeatSelectionPage() {
   const handlePayment = () => {
     navigate('/orders/payment', {
       state: {
-        holdTokens:  heldSeats.map((h) => h.holdToken),
+        holdTokens:    heldSeats.map((h) => h.holdToken),
         selectedSeats: heldSeats,
-        eventId:     Number(eventId),
+        eventId:       Number(eventId),
+        // 이벤트 기본 정보를 함께 전달 — OrderPaymentPage에서 TicketSummaryCard에 사용
+        eventTitle:    event?.title,
+        eventDate:     event?.eventDate,
+        venueName:     event?.venue.name,
       },
     })
   }
