@@ -9,7 +9,7 @@
  */
 
 import axios from 'axios'
-import { getToken, removeToken } from '@/utils/storage'
+import { removeToken } from '@/utils/storage'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -22,7 +22,7 @@ const apiClient = axios.create({
 // 요청 인터셉터: 토큰이 있으면 모든 요청 헤더에 자동으로 Bearer 토큰 추가
 apiClient.interceptors.request.use(
   (config) => {
-    const token = getToken()
+    const token = localStorage.getItem('accessToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -36,9 +36,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // 인증 만료 → 토큰 삭제 후 로그인 페이지로 이동
-      removeToken()
-      window.location.href = '/login'
+      const url = error.config?.url ?? ''
+      // 로그인/회원가입 API는 인터셉터 개입 없이 호출부에서 직접 처리
+      const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/signup')
+      if (!isAuthEndpoint) {
+        // 인증 만료 → 토큰 삭제 후 로그인 페이지로 이동
+        removeToken()
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   },
