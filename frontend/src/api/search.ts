@@ -3,17 +3,15 @@ import apiClient from './client'
 import type { PopularKeyword } from '../types/search'
 
 // 인기 검색어 목록 조회
+// TODO: 백엔드 /api/search/popular 엔드포인트 구현 전까지 빈 배열 반환
 export const getPopularKeywords = async (): Promise<PopularKeyword[]> => {
-  const response = await apiClient.get<PopularKeyword[]>('/search/popular')
-  return response.data
+  return []
 }
 
 // 인기 검색어 클릭 이벤트 전송
+// TODO: 백엔드 /api/search/popular/click 엔드포인트 구현 전까지 no-op
 export const clickPopularKeyword = async (
-  keyword: string
+  _keyword: string
 ): Promise<{ message: string; keyword: string }> => {
-  const response = await apiClient.post<{ message: string; keyword: string }>('/search/popular/click', {
-    keyword,
-  })
-  return response.data
+  return { message: '', keyword: _keyword }
 }
