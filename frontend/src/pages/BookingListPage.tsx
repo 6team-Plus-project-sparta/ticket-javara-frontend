@@ -192,7 +192,7 @@ function BookingListPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, statusFilter, toast])
+  }, [currentPage, statusFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchBookings()

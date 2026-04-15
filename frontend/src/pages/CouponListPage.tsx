@@ -149,7 +149,7 @@ function CouponListPage() {
       .then((data) => setCoupons(sortCoupons(data)))
       .catch(() => toast.error('쿠폰 목록을 불러오지 못했습니다.'))
       .finally(() => setLoading(false))
-  }, [toast])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 사용 가능한 쿠폰 수
   const usableCount = coupons.filter((c) => c.status === 'ISSUED').length
