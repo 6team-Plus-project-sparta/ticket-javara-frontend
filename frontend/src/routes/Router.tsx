@@ -25,6 +25,12 @@
  *       ├── /login   → LoginPage
  *       └── /signup  → SignupPage
  *
+ * [AdminLayout] — 관리자 전용 레이아웃
+ *   └── [AdminRoute] — 관리자 권한 여부 확인
+ *       ├── /admin/events    → AdminEventPage
+ *       ├── /admin/coupons   → AdminCouponPage
+ *       └── /admin/chat      → AdminCSDashboardPage
+ *
  * *  → NotFoundPage
  */
 
@@ -51,6 +57,11 @@ import ChatPage            from '@/pages/ChatPage'
 import LoginPage           from '@/pages/LoginPage'
 import SignupPage          from '@/pages/SignupPage'
 import NotFoundPage        from '@/pages/NotFoundPage'
+import AdminLayout         from '@/layouts/AdminLayout'
+import AdminRoute          from './AdminRoute'
+import AdminEventPage      from '@/pages/admin/AdminEventPage'
+import AdminCouponPage     from '@/pages/admin/AdminCouponPage'
+import AdminCSDashboardPage from '@/pages/admin/AdminCSDashboardPage'
 
 function Router() {
   return (
@@ -89,6 +100,15 @@ function Router() {
           <Route path="/signup" element={<SignupPage />} />
         </Route>
 
+      </Route>
+
+      {/* ── 관리자 전용 레이아웃 ── */}
+      <Route element={<AdminRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/events"  element={<AdminEventPage />} />
+          <Route path="/admin/coupons" element={<AdminCouponPage />} />
+          <Route path="/admin/chat"    element={<AdminCSDashboardPage />} />
+        </Route>
       </Route>
 
       {/* 404 */}

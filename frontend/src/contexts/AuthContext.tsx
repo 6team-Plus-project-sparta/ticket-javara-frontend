@@ -57,11 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchMe = useCallback(async () => {
     try {
       const profile = await getMe()
+      console.log('[AuthContext] fetchMe 성공:', profile)
       setUser(profile)
-    } catch {
-      // 토큰이 만료됐거나 유효하지 않으면 로그아웃 처리
-      removeToken()
-      setAccessToken(null)
+    } catch (e) {
+      console.warn('[AuthContext] fetchMe 실패 (user=null 유지, 토큰은 보존):', e)
       setUser(null)
     }
   }, [])
@@ -82,9 +81,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /** 로그인: 토큰 저장 후 내 정보 조회 */
   const login = useCallback(async (data: LoginRequest) => {
     const response = await loginApi(data)
-    saveToken(response.accessToken)
-    setAccessToken(response.accessToken)
-    // 로그인 응답에 user 정보가 없으므로 별도로 내 정보 조회
+
+    console.log('[Auth] response.data:', response.data)
+    console.log('[Auth] response.headers:', response.headers)
+
+    // 백엔드 공통 래퍼: { data: { accessToken }, code, message }
+    const bodyToken = response.data?.data?.accessToken
+
+    console.log('[Auth] bodyToken:', bodyToken)
+
+    if (!bodyToken) {
+      console.error('[Auth] 토큰 없음. 전체 data:', JSON.stringify(response.data))
+      throw new Error('토큰을 찾을 수 없습니다.')
+    }
+
+    // "Bearer " 접두사 제거 (있을 경우)
+    const accessToken = bodyToken.startsWith('Bearer ') ? bodyToken.slice(7) : bodyToken
+
+    console.log('[Auth] 저장할 accessToken:', accessToken)
+
+    saveToken(accessToken)
+    setAccessToken(accessToken)
     await fetchMe()
   }, [fetchMe])
 
@@ -97,7 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextValue = {
     accessToken,
-    isLoggedIn: !!accessToken && !!user,
+    // accessToken만 있으면 로그인 상태로 판단 (user 조회 실패해도 로그인 유지)
+    isLoggedIn: !!accessToken,
     user,
     isInitializing,
     login,

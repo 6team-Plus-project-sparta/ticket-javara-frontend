@@ -23,3 +23,10 @@ export interface LoginResponse {
   expiresIn: number
   tokenType: string
 }
+
+/** 백엔드 공통 응답 래퍼: { data: T, code: string, message: string } */
+export interface ApiWrapper<T> {
+  data: T
+  code: string
+  message: string
+}
