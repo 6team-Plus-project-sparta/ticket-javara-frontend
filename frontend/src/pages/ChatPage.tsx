@@ -145,9 +145,7 @@ function ChatPage() {
       .then(setRoom)
       .catch(() => toast.error('채팅방을 불러오지 못했습니다.'))
       .finally(() => setRoomLoading(false))
-  }, [toast])
-
-  // ── 초기 메시지 조회 ─────────────────────────────────────────
+  }, [toast]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!room) return
     getChatMessages(room.chatRoomId, { size: MESSAGE_PAGE_SIZE })
@@ -158,7 +156,7 @@ function ChatPage() {
         setHasNext(res.hasNext)
       })
       .catch(() => toast.error('메시지를 불러오지 못했습니다.'))
-  }, [room, toast])
+  }, [room]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 이전 메시지 추가 조회 (cursor 기반) ──────────────────────
   const loadMoreMessages = useCallback(async () => {
@@ -179,7 +177,7 @@ function ChatPage() {
     } finally {
       setHistoryLoading(false)
     }
-  }, [room, hasNext, historyLoading, nextCursor, toast])
+  }, [room, hasNext, historyLoading, nextCursor]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 이전 메시지 로드 후 스크롤 위치 보정 (위로 튀지 않게)
   useEffect(() => {

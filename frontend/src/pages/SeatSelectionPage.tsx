@@ -316,7 +316,7 @@ function SeatSelectionPage() {
     } finally {
       setSeatsLoading(false)
     }
-  }, [eventId, toast])
+  }, [eventId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (activeSectionId !== null) fetchSeats(activeSectionId)

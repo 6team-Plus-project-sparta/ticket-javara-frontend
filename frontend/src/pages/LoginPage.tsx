@@ -52,13 +52,24 @@ function validate(values: FormValues): FormErrors {
 // ─── 서버 에러 코드 → 사용자 메시지 변환 ─────────────────────
 
 function getServerErrorMessage(error: unknown): string {
-  const axiosError = error as AxiosError<{ code: string; message: string }>
-  const code = axiosError.response?.data?.code
+  const axiosError = error as AxiosError<{ code: string; message: string; data?: { code?: string } }>
+  const responseData = axiosError.response?.data
+
+  // 백엔드 공통 래퍼 구조: { code, message } 또는 { data: { code } }
+  const code = responseData?.code ?? responseData?.data?.code
+  const status = axiosError.response?.status
+
+  // 토큰을 못 찾은 경우 (AuthContext에서 throw한 에러)
+  if (error instanceof Error && error.message === '토큰을 찾을 수 없습니다.') {
+    return '이메일 또는 비밀번호가 올바르지 않습니다.'
+  }
 
   switch (code) {
     case 'AUTHENTICATION_FAILED':
       return '이메일 또는 비밀번호가 올바르지 않습니다.'
     default:
+      // 401이면 인증 실패로 안내
+      if (status === 401) return '이메일 또는 비밀번호가 올바르지 않습니다.'
       return '로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
   }
 }

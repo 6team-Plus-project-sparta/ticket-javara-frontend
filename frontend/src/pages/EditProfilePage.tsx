@@ -111,7 +111,7 @@ function EditProfilePage() {
         navigate('/mypage')
       })
       .finally(() => setPageLoading(false))
-  }, [navigate, toast])
+  }, [navigate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 입력 변경 — 해당 필드 에러 즉시 초기화
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
