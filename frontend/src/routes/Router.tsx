@@ -46,6 +46,7 @@ import BookingListPage     from '@/pages/BookingListPage'
 import CouponListPage      from '@/pages/CouponListPage'
 import EditProfilePage     from '@/pages/EditProfilePage'
 import CouponIssuePage     from '@/pages/CouponIssuePage'
+import CouponEventPage     from '@/pages/CouponEventPage'
 import ChatPage            from '@/pages/ChatPage'
 import LoginPage           from '@/pages/LoginPage'
 import SignupPage          from '@/pages/SignupPage'
@@ -62,6 +63,7 @@ function Router() {
         <Route path="/"             element={<HomePage />} />
         <Route path="/search"       element={<SearchResultPage />} />
         <Route path="/events/:eventId" element={<EventDetailPage />} />
+        <Route path="/coupons"      element={<CouponEventPage />} />
 
         {/* 인증 필요 라우트 — 로그인 안 됐으면 /login으로 이동 */}
         <Route element={<ProtectedRoute />}>

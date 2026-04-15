@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getEvents } from '@/api/events'
 import { getPopularKeywords, clickPopularKeyword } from '@/api/search'
 import type { EventSummary, EventCategory } from '@/types/event'
@@ -196,6 +196,7 @@ function EventCard({ event, onClick }: { event: EventSummary; onClick: () => voi
 
 function HomePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { isLoggedIn } = useAuth()
 
   // 이벤트 목록 상태
@@ -204,13 +205,26 @@ function HomePage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [eventsLoading, setEventsLoading] = useState(true)
 
-  // 필터 상태
-  const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'ALL'>('ALL')
+  // 필터 상태 — URL 쿼리스트링의 category를 초기값으로 사용
+  const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'ALL'>(
+    () => (searchParams.get('category') as EventCategory) || 'ALL'
+  )
   const [selectedSort, setSelectedSort] = useState('eventDate,asc')
 
   // 인기 검색어 상태
   const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([])
   const [keywordsLoading, setKeywordsLoading] = useState(true)
+
+  // URL 쿼리스트링 category 변경 시 필터 동기화 (헤더 네비 클릭 대응)
+  useEffect(() => {
+    const cat = (searchParams.get('category') as EventCategory) || 'ALL'
+    // 이미 같은 값이면 불필요한 재조회 방지
+    setSelectedCategory((prev) => {
+      if (prev === cat) return prev
+      setCurrentPage(0)
+      return cat
+    })
+  }, [searchParams])
 
   // 이벤트 목록 조회
   useEffect(() => {
@@ -223,8 +237,8 @@ function HomePage() {
           sort: selectedSort,
           ...(selectedCategory !== 'ALL' && { category: selectedCategory }),
         })
-        setEvents(res.content)
-        setTotalPages(res.totalPages)
+        setEvents(res.content ?? [])
+        setTotalPages(res.totalPages ?? 0)
       } catch {
         setEvents([])
       } finally {

@@ -52,7 +52,6 @@ function sortCoupons(coupons: UserCoupon[]): UserCoupon[] {
 /** 쿠폰 카드 */
 function CouponCard({ coupon }: { coupon: UserCoupon }) {
   const expiringSoon = isExpiringSoon(coupon)
-  const isUsable     = coupon.status === 'ISSUED'
   const isDimmed     = coupon.status === 'USED' || coupon.status === 'EXPIRED'
 
   // 만료까지 남은 일수 계산

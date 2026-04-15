@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getSeats, holdSeat, releaseHold } from '@/api/seats'
 import { getEventDetail } from '@/api/events'
-import type { Seat, SeatSection } from '@/types/seat'
+import type { Seat } from '@/types/seat'
 import type { EventDetail } from '@/types/event'
 import type { AxiosError } from 'axios'
 import {
@@ -64,7 +64,7 @@ function SectionTabs({
   activeId,
   onSelect,
 }: {
-  sections: SeatSection[]
+  sections: { sectionId: number; sectionName: string; price: number }[]
   activeId: number
   onSelect: (id: number) => void
 }) {
@@ -219,11 +219,9 @@ function SeatGrid({
 /** 선택 좌석 요약 패널 */
 function SelectedSeatPanel({
   heldSeats,
-  sectionPrice,
   onPayment,
 }: {
   heldSeats: HeldSeat[]
-  sectionPrice: number
   onPayment: () => void
 }) {
   const totalPrice = heldSeats.reduce((sum, s) => sum + s.price, 0)
@@ -440,9 +438,6 @@ function SeatSelectionPage() {
     )
   }, [heldSeats])
 
-  // 현재 활성 구역 정보
-  const activeSection = event?.sections.find((s) => s.sectionId === activeSectionId)
-
   // ── 렌더링 ───────────────────────────────────────────────────
 
   return (
@@ -514,7 +509,6 @@ function SeatSelectionPage() {
         <aside className="w-full lg:w-64 shrink-0 lg:sticky lg:top-24">
           <SelectedSeatPanel
             heldSeats={heldSeats}
-            sectionPrice={activeSection?.price ?? 0}
             onPayment={handlePayment}
           />
         </aside>

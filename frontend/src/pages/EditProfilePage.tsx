@@ -42,7 +42,7 @@ interface FormErrors {
 
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
 
-function validate(values: FormValues, originalNickname: string): FormErrors {
+function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {}
 
   if (!values.nickname.trim()) {
@@ -119,7 +119,7 @@ function EditProfilePage() {
     const next = { ...values, [name]: value }
     setValues(next)
     if (profile) {
-      const freshErrors = validate(next, profile.nickname)
+      const freshErrors = validate(next)
       setErrors((prev) => ({ ...prev, [name]: freshErrors[name as keyof FormErrors] }))
     }
     setServerError('')
@@ -130,7 +130,7 @@ function EditProfilePage() {
     e.preventDefault()
     if (!profile) return
 
-    const validationErrors = validate(values, profile.nickname)
+    const validationErrors = validate(values)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       return

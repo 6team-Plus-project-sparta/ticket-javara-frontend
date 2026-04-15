@@ -21,10 +21,10 @@ interface HeaderProps {
 }
 
 const defaultNavItems: NavItem[] = [
-  { label: '콘서트', path: '/events?category=CONCERT' },
-  { label: '뮤지컬/연극', path: '/events?category=MUSICAL' },
-  { label: '스포츠', path: '/events?category=SPORTS' },
-  { label: '전시', path: '/events?category=EXHIBITION' },
+  { label: '홈',      path: '/' },
+  { label: '검색',    path: '/search' },
+  { label: '쿠폰',    path: '/coupons' },
+  { label: '고객센터', path: '/chat' },
 ]
 
 function Header({ isLoggedIn = false, onLogout, navItems = defaultNavItems, searchSlot }: HeaderProps) {
