@@ -19,18 +19,18 @@ export const getMe = async (): Promise<UserProfile> => {
 
 // 내 프로필 수정
 export const updateMe = async (data: UpdateMeRequest): Promise<{ message: string }> => {
-  const response = await apiClient.patch<{ message: string }>('/users/me', data)
-  return response.data
+  const response = await apiClient.patch<ApiWrapper<{ message: string }>>('/users/me', data)
+  return (response.data as ApiWrapper<{ message: string }>).data ?? response.data as unknown as { message: string }
 }
 
 // 내 예매 내역 조회
 export const getMyBookings = async (params: BookingListParams): Promise<PageResponse<OrderSummary>> => {
-  const response = await apiClient.get<PageResponse<OrderSummary>>('/users/me/bookings', { params })
-  return response.data
+  const response = await apiClient.get<ApiWrapper<PageResponse<OrderSummary>>>('/users/me/bookings', { params })
+  return (response.data as ApiWrapper<PageResponse<OrderSummary>>).data ?? response.data as unknown as PageResponse<OrderSummary>
 }
 
 // 내 쿠폰 목록 조회
 export const getMyCoupons = async (): Promise<UserCoupon[]> => {
-  const response = await apiClient.get<UserCoupon[]>('/users/me/coupons')
-  return response.data
+  const response = await apiClient.get<ApiWrapper<UserCoupon[]>>('/users/me/coupons')
+  return (response.data as ApiWrapper<UserCoupon[]>).data ?? response.data as unknown as UserCoupon[]
 }
