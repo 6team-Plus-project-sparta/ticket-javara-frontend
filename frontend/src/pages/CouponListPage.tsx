@@ -187,7 +187,7 @@ function CouponListPage() {
           title="보유한 쿠폰이 없습니다"
           description="이벤트나 선착순 쿠폰 발급을 통해 쿠폰을 받아보세요"
           actionLabel="쿠폰 발급받기"
-          onAction={() => navigate('/coupon/issue')}
+          onAction={() => navigate('/coupons')}
         />
       ) : (
         <div className="space-y-3">

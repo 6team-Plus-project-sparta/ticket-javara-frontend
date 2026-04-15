@@ -108,7 +108,7 @@ function CouponCard({ coupon, isLoggedIn }: { coupon: CouponInfo; isLoggedIn: bo
   const isSoldOut = remaining === 0
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+    <article className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-md hover:shadow-lg transition-shadow">
 
       {/* 상단 배너 — imageUrl 있으면 이미지, 없으면 그라디언트 */}
       {coupon.imageUrl ? (
@@ -118,13 +118,11 @@ function CouponCard({ coupon, isLoggedIn }: { coupon: CouponInfo; isLoggedIn: bo
             alt={coupon.name}
             className="h-full w-full object-cover"
           />
-          {/* 이미지 위 배지 */}
           {coupon.badgeLabel && (
             <span className="absolute left-4 top-4 rounded-full bg-primary-500 px-3 py-0.5 text-xs font-bold text-white shadow">
               {coupon.badgeLabel}
             </span>
           )}
-          {/* 이미지 위 할인 금액 오버레이 */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-5 py-4">
             <p className="text-2xl font-extrabold text-white">
               {formatPrice(coupon.discountAmount)}
@@ -134,29 +132,32 @@ function CouponCard({ coupon, isLoggedIn }: { coupon: CouponInfo; isLoggedIn: bo
           </div>
         </div>
       ) : (
-        <div className="relative bg-gradient-to-br from-brand-800 to-brand-900 px-6 py-8 text-white">
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary-500/20" aria-hidden="true" />
+        <div className="relative bg-gradient-to-br from-blue-600 to-indigo-600 px-6 py-8 text-white">
+          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" aria-hidden="true" />
           <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" aria-hidden="true" />
           {coupon.badgeLabel && (
-            <span className="relative z-10 mb-3 inline-block rounded-full bg-primary-500 px-3 py-0.5 text-xs font-bold text-white">
+            <span className="relative z-10 mb-3 inline-block rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold text-white">
               {coupon.badgeLabel}
             </span>
           )}
           <div className="relative z-10">
+            <p className="mb-1 text-xs font-medium uppercase tracking-widest text-blue-200">
+              선착순 한정 쿠폰
+            </p>
             <p className="text-4xl font-extrabold">
               {formatPrice(coupon.discountAmount)}
               <span className="ml-2 text-lg font-normal text-blue-200">할인</span>
             </p>
-            <p className="mt-1.5 text-sm font-semibold text-blue-100">{coupon.name}</p>
+            <p className="mt-2 text-base font-semibold text-blue-100">{coupon.name}</p>
           </div>
         </div>
       )}
 
       {/* 절취선 */}
       <div className="flex items-center">
-        <div className="h-5 w-5 -ml-2.5 shrink-0 rounded-full bg-gray-50" aria-hidden="true" />
+        <div className="h-5 w-5 -ml-2.5 shrink-0 rounded-full bg-gray-100" aria-hidden="true" />
         <div className="flex-1 border-t-2 border-dashed border-gray-200" aria-hidden="true" />
-        <div className="h-5 w-5 -mr-2.5 shrink-0 rounded-full bg-gray-50" aria-hidden="true" />
+        <div className="h-5 w-5 -mr-2.5 shrink-0 rounded-full bg-gray-100" aria-hidden="true" />
       </div>
 
       {/* 하단 정보 */}
