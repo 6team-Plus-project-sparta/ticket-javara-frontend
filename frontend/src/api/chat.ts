@@ -10,10 +10,23 @@ import type {
 } from '../types/chat'
 import type { PageResponse } from '../types/common'
 
-// 채팅방 생성
+/** 백엔드 공통 응답 래퍼 */
+interface ApiWrapper<T> {
+  data: T
+  code: string
+  message: string
+}
+
+/** 래퍼 구조면 data.data, 아니면 data 직접 반환 */
+function unwrap<T>(response: { data: ApiWrapper<T> | T }): T {
+  const d = response.data as ApiWrapper<T>
+  return d?.data !== undefined ? d.data : (response.data as T)
+}
+
+// 채팅방 생성 (없으면 생성, 있으면 기존 방 반환)
 export const createChatRoom = async (): Promise<ChatRoom> => {
-  const response = await apiClient.post<ChatRoom>('/chat/rooms')
-  return response.data
+  const response = await apiClient.post<ApiWrapper<ChatRoom>>('/chat/rooms')
+  return unwrap(response)
 }
 
 // 채팅 메시지 목록 조회
@@ -21,32 +34,33 @@ export const getChatMessages = async (
   chatRoomId: number,
   params: ChatMessageParams
 ): Promise<ChatMessageListResponse> => {
-  const response = await apiClient.get<ChatMessageListResponse>(`/chat/rooms/${chatRoomId}/messages`, {
-    params,
-  })
-  return response.data
+  const response = await apiClient.get<ApiWrapper<ChatMessageListResponse>>(
+    `/chat/rooms/${chatRoomId}/messages`,
+    { params }
+  )
+  return unwrap(response)
 }
 
 // 채팅방 종료
 export const closeChatRoom = async (
   chatRoomId: number
 ): Promise<{ message: string; chatRoomId: number; closedAt: string }> => {
-  const response = await apiClient.patch<{ message: string; chatRoomId: number; closedAt: string }>(
+  const response = await apiClient.patch<ApiWrapper<{ message: string; chatRoomId: number; closedAt: string }>>(
     `/chat/rooms/${chatRoomId}/close`
   )
-  return response.data
+  return unwrap(response)
 }
 
 // 채팅방 목록 조회 (관리자)
 export const getAdminChatRooms = async (
   params: AdminChatRoomParams
 ): Promise<PageResponse<AdminChatRoom>> => {
-  const response = await apiClient.get<PageResponse<AdminChatRoom>>('/admin/chat/rooms', { params })
-  return response.data
+  const response = await apiClient.get<ApiWrapper<PageResponse<AdminChatRoom>>>('/admin/chat/rooms', { params })
+  return unwrap(response)
 }
 
 // 예매 확정 (관리자)
 export const confirmBooking = async (bookingId: number): Promise<ConfirmBookingResponse> => {
-  const response = await apiClient.patch<ConfirmBookingResponse>(`/admin/bookings/${bookingId}/confirm`)
-  return response.data
+  const response = await apiClient.patch<ApiWrapper<ConfirmBookingResponse>>(`/admin/bookings/${bookingId}/confirm`)
+  return unwrap(response)
 }

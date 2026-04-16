@@ -5,10 +5,10 @@
  */
 
 const legends = [
-  { label: '선택 가능',       className: 'bg-white border-2 border-gray-300' },
-  { label: '내가 선택',       className: 'bg-blue-600 border-2 border-blue-600' },
-  { label: '임시 선점 중',    className: 'bg-yellow-400 border-2 border-yellow-400' },
-  { label: '예매 완료',       className: 'bg-gray-400 border-2 border-gray-400' },
+  { label: '선택 가능',    className: 'bg-white border-2 border-gray-300 rounded-t-lg rounded-b-sm' },
+  { label: '내가 선택',    className: 'bg-blue-600 border-2 border-blue-600 rounded-t-lg rounded-b-sm' },
+  { label: '임시 선점 중', className: 'bg-yellow-400 border-2 border-yellow-400 rounded-t-lg rounded-b-sm' },
+  { label: '예매 완료',    className: 'bg-gray-400 border-2 border-gray-400 rounded-t-lg rounded-b-sm' },
 ]
 
 function SeatLegend() {
