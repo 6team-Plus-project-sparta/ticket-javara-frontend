@@ -12,7 +12,7 @@ import { Header, SearchBar } from '@/components'
 import { useAuth } from '@/contexts/AuthContext'
 
 function MainLayout() {
-  const { isLoggedIn, logout } = useAuth()
+  const { isLoggedIn, logout, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -28,6 +28,7 @@ function MainLayout() {
     <div className={['bg-gray-50', isChatPage ? 'h-screen flex flex-col overflow-hidden' : 'min-h-screen'].join(' ')}>
       <Header
         isLoggedIn={isLoggedIn}
+        isAdmin={user?.role === 'ADMIN'}
         onLogout={handleLogout}
         searchSlot={
           <SearchBar
@@ -35,10 +36,10 @@ function MainLayout() {
           />
         }
       />
-      {/* 페이지 본문 */}
+      {/* 페이지 본문 — 좌우 여백 충분히, 컨테이너 중앙 정렬 */}
       <main className={isChatPage
-        ? 'flex-1 overflow-hidden'
-        : 'mx-auto max-w-7xl px-4 py-6'
+        ? 'flex-1 overflow-hidden px-10 py-6'
+        : 'mx-auto w-full max-w-screen-xl px-10 py-10 sm:px-16'
       }>
         <Outlet />
       </main>

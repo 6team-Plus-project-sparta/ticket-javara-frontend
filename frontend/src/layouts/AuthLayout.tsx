@@ -9,7 +9,7 @@ import { Outlet, Link } from 'react-router-dom'
 
 function AuthLayout() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 sm:px-10">
       {/* 로고 */}
       <Link
         to="/"

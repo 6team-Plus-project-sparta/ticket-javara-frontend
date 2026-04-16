@@ -15,6 +15,7 @@ interface NavItem {
 
 interface HeaderProps {
   isLoggedIn?: boolean
+  isAdmin?: boolean
   onLogout?: () => void
   navItems?: NavItem[]
   searchSlot?: React.ReactNode
@@ -27,12 +28,12 @@ const defaultNavItems: NavItem[] = [
   { label: '고객센터', path: '/chat' },
 ]
 
-function Header({ isLoggedIn = false, onLogout, navItems = defaultNavItems, searchSlot }: HeaderProps) {
+function Header({ isLoggedIn = false, isAdmin = false, onLogout, navItems = defaultNavItems, searchSlot }: HeaderProps) {
   const location = useLocation()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
+      <div className="mx-auto flex h-16 w-full max-w-screen-xl items-center gap-4 px-10 sm:px-16">
 
         {/* 로고 */}
         <Link
@@ -70,6 +71,14 @@ function Header({ isLoggedIn = false, onLogout, navItems = defaultNavItems, sear
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {isLoggedIn ? (
             <>
+              {/* 관리자 메뉴 */}
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="small" className="text-orange-500 border-orange-300 hover:bg-orange-50">
+                    관리자
+                  </Button>
+                </Link>
+              )}
               <Link to="/mypage">
                 <Button variant="ghost" size="small">마이페이지</Button>
               </Link>

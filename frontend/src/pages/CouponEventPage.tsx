@@ -7,11 +7,12 @@
  * - 비로그인 상태면 "로그인 후 발급 가능" 안내
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { issueCoupon } from '@/api/coupons'
+import { issueCoupon, getAllCoupons } from '@/api/coupons'
+import type { GetCouponResponse } from '@/types/coupon'
 import type { AxiosError } from 'axios'
-import { Button } from '@/components'
+import { Button, LoadingSpinner } from '@/components'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/Toast'
 
@@ -19,35 +20,11 @@ import { useToast } from '@/components/Toast'
 
 type IssueStatus = 'idle' | 'loading' | 'issued' | 'exhausted' | 'notStarted'
 
-interface CouponInfo {
-  couponId: number
-  name: string
-  discountAmount: number
-  totalQuantity: number
-  remainingQuantity: number
-  startAt: string
-  expiredAt: string
-  description?: string
-  badgeLabel?: string
+// GetCouponResponse에 UI 전용 필드 추가
+interface CouponInfo extends GetCouponResponse {
   /** 배너 이미지 URL — 있으면 이미지, 없으면 그라디언트 배너 표시 */
   imageUrl?: string
 }
-
-// ─── 진행 중인 쿠폰 목록 ─────────────────────────────────────
-
-const COUPON_LIST: CouponInfo[] = [
-  {
-    couponId:          3,
-    name:              '신규 가입 5,000원 할인',
-    discountAmount:    5000,
-    totalQuantity:     100,
-    remainingQuantity: 43,
-    startAt:           '2026-04-10T12:00:00',
-    expiredAt:         '2026-05-31T23:59:59',
-    description:       '선착순 100명 한정! 첫 예매 시 사용 가능한 할인 쿠폰',
-    badgeLabel:        '신규 가입',
-  },
-]
 
 // ─── 유틸 ────────────────────────────────────────────────────
 
@@ -235,6 +212,18 @@ function CouponCard({ coupon, isLoggedIn }: { coupon: CouponInfo; isLoggedIn: bo
 
 function CouponEventPage() {
   const { isLoggedIn } = useAuth()
+  const { toast }      = useToast()
+
+  const [coupons, setCoupons]   = useState<CouponInfo[]>([])
+  const [loading, setLoading]   = useState(true)
+
+  // 쿠폰 목록 조회 (마운트 1회)
+  useEffect(() => {
+    getAllCoupons(0, 20)
+      .then((res) => setCoupons(res.content ?? []))
+      .catch(() => toast.error('쿠폰 목록을 불러오지 못했습니다.'))
+      .finally(() => setLoading(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -246,7 +235,9 @@ function CouponEventPage() {
       </div>
 
       {/* 쿠폰 목록 */}
-      {COUPON_LIST.length === 0 ? (
+      {loading ? (
+        <LoadingSpinner />
+      ) : coupons.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <p className="text-4xl">🎟️</p>
           <p className="text-base font-medium text-gray-600">현재 진행 중인 쿠폰 이벤트가 없습니다.</p>
@@ -254,7 +245,7 @@ function CouponEventPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {COUPON_LIST.map((coupon) => (
+          {coupons.map((coupon) => (
             <CouponCard key={coupon.couponId} coupon={coupon} isLoggedIn={isLoggedIn} />
           ))}
         </div>

@@ -53,9 +53,10 @@ import CouponListPage      from '@/pages/CouponListPage'
 import EditProfilePage     from '@/pages/EditProfilePage'
 import CouponIssuePage     from '@/pages/CouponIssuePage'
 import CouponEventPage     from '@/pages/CouponEventPage'
-import ChatPage            from '@/pages/ChatPage'
+import ChatRouterPage      from '@/pages/ChatRouterPage'
 import LoginPage           from '@/pages/LoginPage'
 import SignupPage          from '@/pages/SignupPage'
+import AdminPage           from '@/pages/AdminPage'
 import NotFoundPage        from '@/pages/NotFoundPage'
 import AdminLayout         from '@/layouts/AdminLayout'
 import AdminRoute          from './AdminRoute'
@@ -86,7 +87,8 @@ function Router() {
           <Route path="/mypage/coupons"           element={<CouponListPage />} />
           <Route path="/mypage/edit"              element={<EditProfilePage />} />
           <Route path="/coupon/issue"             element={<CouponIssuePage />} />
-          <Route path="/chat"                     element={<ChatPage />} />
+          <Route path="/chat"                     element={<ChatRouterPage />} />
+          <Route path="/admin"                    element={<AdminPage />} />
         </Route>
 
       </Route>
