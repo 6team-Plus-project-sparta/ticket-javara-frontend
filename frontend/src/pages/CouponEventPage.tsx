@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { issueCoupon, getAllCoupons } from '@/api/coupons'
+import { getMyCoupons } from '@/api/users'
 import type { GetCouponResponse } from '@/types/coupon'
 import type { AxiosError } from 'axios'
 import { Button, LoadingSpinner } from '@/components'
@@ -22,6 +23,8 @@ type IssueStatus = 'idle' | 'loading' | 'issued' | 'exhausted' | 'notStarted'
 
 // GetCouponResponse에 UI 전용 필드 추가
 interface CouponInfo extends GetCouponResponse {
+  description?: string
+  badgeLabel?: string
   /** 배너 이미지 URL — 있으면 이미지, 없으면 그라디언트 배너 표시 */
   imageUrl?: string
 }
@@ -36,23 +39,48 @@ const formatDate = (dateStr: string) =>
 const formatPrice = (price: number) => `${price.toLocaleString('ko-KR')}원`
 
 function parseIssueError(error: unknown): { status: IssueStatus; message: string } {
-  const code = (error as AxiosError<{ code: string; message: string }>).response?.data?.code
-  const msg  = (error as AxiosError<{ code: string; message: string }>).response?.data?.message ?? ''
+  const responseData = (error as AxiosError<{ code?: string; message?: string; data?: { code?: string; message?: string } }>).response?.data
+
+  // 백엔드 공통 래퍼: { code, message, data } 또는 { data: { code, message } }
+  const code = responseData?.code ?? responseData?.data?.code
+  const msg  = responseData?.message ?? responseData?.data?.message ?? ''
+
   switch (code) {
-    case 'COUPON_ALREADY_ISSUED': return { status: 'issued',     message: '이미 발급받은 쿠폰입니다.' }
-    case 'COUPON_EXHAUSTED':      return { status: 'exhausted',  message: '쿠폰이 모두 소진되었습니다.' }
-    case 'COUPON_NOT_STARTED':    return { status: 'notStarted', message: msg || '쿠폰 발급 시간이 아닙니다.' }
-    case 'SERVICE_UNAVAILABLE':   return { status: 'idle',       message: '현재 서비스 이용이 어렵습니다. 잠시 후 다시 시도해주세요.' }
-    default:                      return { status: 'idle',       message: '쿠폰 발급 중 오류가 발생했습니다.' }
+    case 'COUPON_ALREADY_ISSUED':
+    case 'C001':
+      return { status: 'issued',     message: '이미 발급받은 쿠폰입니다.' }
+    case 'COUPON_EXHAUSTED':
+    case 'C002':
+      return { status: 'exhausted',  message: '쿠폰이 모두 소진되었습니다.' }
+    case 'COUPON_NOT_STARTED':
+    case 'C003':
+      return { status: 'notStarted', message: msg || '쿠폰 발급 시간이 아닙니다.' }
+    case 'SERVICE_UNAVAILABLE':
+      return { status: 'idle',       message: '현재 서비스 이용이 어렵습니다. 잠시 후 다시 시도해주세요.' }
+    default:
+      return { status: 'idle',       message: msg || '쿠폰 발급 중 오류가 발생했습니다.' }
   }
 }
 
 // ─── 쿠폰 카드 ───────────────────────────────────────────────
 
-function CouponCard({ coupon, isLoggedIn }: { coupon: CouponInfo; isLoggedIn: boolean }) {
+function CouponCard({
+  coupon,
+  isLoggedIn,
+  initialIssued = false,
+}: {
+  coupon: CouponInfo
+  isLoggedIn: boolean
+  initialIssued?: boolean
+}) {
   const { toast }   = useToast()
   const navigate    = useNavigate()
-  const [status, setStatus]       = useState<IssueStatus>('idle')
+  // 이미 발급받은 쿠폰이면 처음부터 'issued', 수량 0이면 'exhausted' 상태로 시작
+  const [status, setStatus] = useState<IssueStatus>(() => {
+    if (initialIssued) return 'issued'
+    if (coupon.remainingQuantity <= 0) return 'exhausted'
+    return 'idle'
+  })
   const [remaining, setRemaining] = useState(coupon.remainingQuantity)
 
   const remainingRatio = Math.round((remaining / coupon.totalQuantity) * 100)
@@ -214,16 +242,38 @@ function CouponEventPage() {
   const { isLoggedIn } = useAuth()
   const { toast }      = useToast()
 
-  const [coupons, setCoupons]   = useState<CouponInfo[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [coupons, setCoupons]         = useState<CouponInfo[]>([])
+  const [issuedCouponIds, setIssuedCouponIds] = useState<Set<number>>(new Set())
+  const [loading, setLoading]         = useState(true)
 
-  // 쿠폰 목록 조회 (마운트 1회)
+  // 쿠폰 목록 + 내 발급 목록 동시 조회
   useEffect(() => {
-    getAllCoupons(0, 20)
-      .then((res) => setCoupons(res.content ?? []))
-      .catch(() => toast.error('쿠폰 목록을 불러오지 못했습니다.'))
-      .finally(() => setLoading(false))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    const fetchData = async () => {
+      try {
+        const [couponRes, myRes] = await Promise.allSettled([
+          getAllCoupons(0, 20),
+          isLoggedIn ? getMyCoupons() : Promise.resolve([]),
+        ])
+
+        if (couponRes.status === 'fulfilled') {
+          const list = couponRes.value.content ?? []
+          console.log('[CouponEventPage] 쿠폰 목록:', list)
+          setCoupons(list)
+        } else {
+          toast.error('쿠폰 목록을 불러오지 못했습니다.')
+        }
+
+        if (myRes.status === 'fulfilled' && Array.isArray(myRes.value)) {
+          // 내가 발급받은 쿠폰의 couponId Set 생성
+          const ids = new Set(myRes.value.map((c) => c.couponId))
+          setIssuedCouponIds(ids)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -246,7 +296,12 @@ function CouponEventPage() {
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {coupons.map((coupon) => (
-            <CouponCard key={coupon.couponId} coupon={coupon} isLoggedIn={isLoggedIn} />
+            <CouponCard
+              key={coupon.couponId}
+              coupon={coupon}
+              isLoggedIn={isLoggedIn}
+              initialIssued={issuedCouponIds.has(coupon.couponId)}
+            />
           ))}
         </div>
       )}

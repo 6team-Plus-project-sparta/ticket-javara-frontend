@@ -1,4 +1,4 @@
-// 쿠폰 관련 API - 쿠폰 발급, 생성 (관리자), 전체 목록 조회
+// 쿠폰 관련 API - 쿠폰 발급, 생성 (관리자), 전체 목록 조회, 메트릭스
 import apiClient from './client'
 import type {
   IssueCouponResponse,
@@ -6,6 +6,8 @@ import type {
   CreateCouponResponse,
   GetCouponResponse,
   SliceResponse,
+  CouponMetrics,
+  CouponMetricsError,
 } from '../types/coupon'
 
 /** 백엔드 공통 응답 래퍼 */
@@ -25,7 +27,10 @@ export const getAllCoupons = async (page = 0, size = 10): Promise<SliceResponse<
   const response = await apiClient.get<ApiWrapper<SliceResponse<GetCouponResponse>>>('/coupons', {
     params: { page, size },
   })
-  return unwrap(response.data)
+  console.log('[getAllCoupons] raw response.data:', response.data)
+  const result = unwrap(response.data)
+  console.log('[getAllCoupons] unwrapped:', result)
+  return result
 }
 
 // 쿠폰 발급
@@ -37,5 +42,19 @@ export const issueCoupon = async (couponId: number): Promise<IssueCouponResponse
 // 쿠폰 생성 (관리자)
 export const createCoupon = async (data: CreateCouponRequest): Promise<CreateCouponResponse> => {
   const response = await apiClient.post<ApiWrapper<CreateCouponResponse>>('/admin/coupons', data)
+  return unwrap(response.data)
+}
+
+/**
+ * 쿠폰 메트릭스 조회 (관리자)
+ * GET /api/admin/coupons/{couponId}/metrics
+ * 성공: CouponMetrics / 실패: CouponMetricsError
+ */
+export const getCouponMetrics = async (
+  couponId: number
+): Promise<CouponMetrics | CouponMetricsError> => {
+  const response = await apiClient.get<ApiWrapper<CouponMetrics | CouponMetricsError>>(
+    `/admin/coupons/${couponId}/metrics`
+  )
   return unwrap(response.data)
 }

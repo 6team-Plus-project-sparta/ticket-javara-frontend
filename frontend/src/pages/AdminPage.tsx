@@ -11,8 +11,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createEvent } from '@/api/events'
-import { createCoupon } from '@/api/coupons'
+import { createCoupon, getCouponMetrics } from '@/api/coupons'
 import type { EventCategory, CreateEventSectionInput } from '@/types/event'
+import type { CouponMetrics } from '@/types/coupon'
 import type { AxiosError } from 'axios'
 import { Button, Input } from '@/components'
 import { useAuth } from '@/contexts/AuthContext'
@@ -239,9 +240,119 @@ function CouponCreateForm() {
   )
 }
 
+// ─── 쿠폰 메트릭스 조회 폼 ──────────────────────────────────
+
+function CouponMetricsForm() {
+  const { toast }   = useToast()
+  const [couponId, setCouponId]   = useState('')
+  const [metrics, setMetrics]     = useState<CouponMetrics | null>(null)
+  const [error, setError]         = useState('')
+  const [loading, setLoading]     = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!couponId) return
+    setLoading(true)
+    setMetrics(null)
+    setError('')
+    try {
+      const res = await getCouponMetrics(Number(couponId))
+      if ('error' in res) {
+        setError(res.error)
+      } else {
+        setMetrics(res)
+      }
+    } catch {
+      toast.error('메트릭스 조회 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const pct = (v: number) => `${(v * 100).toFixed(1)}%`
+
+  return (
+    <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <Input
+          type="number"
+          value={couponId}
+          onChange={(e) => setCouponId(e.target.value)}
+          placeholder="쿠폰 ID 입력"
+          className="w-40"
+        />
+        <Button type="submit" loading={loading} disabled={!couponId}>
+          조회
+        </Button>
+      </form>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {metrics && (
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800">쿠폰 #{metrics.couponId} 메트릭스</h3>
+            <span className="text-xs text-gray-400">
+              {new Date(metrics.createdAt).toLocaleString('ko-KR')}
+            </span>
+          </div>
+
+          {/* 수치 카드 */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[
+              { label: '총 시도',        value: metrics.totalAttempts.toLocaleString(), color: 'text-gray-800' },
+              { label: 'Redis 성공',     value: metrics.redisSuccess.toLocaleString(),  color: 'text-blue-600' },
+              { label: 'DB Fallback',    value: metrics.dbFallback.toLocaleString(),    color: 'text-amber-600' },
+              { label: '성공률',         value: pct(metrics.successRate),               color: 'text-green-600' },
+              { label: 'Fallback 비율',  value: pct(metrics.fallbackRate),              color: 'text-orange-500' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+                <p className="text-xs text-gray-400">{label}</p>
+                <p className={['mt-1 text-xl font-extrabold', color].join(' ')}>{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* 성공률 바 */}
+          <div>
+            <div className="mb-1 flex justify-between text-xs text-gray-500">
+              <span>성공률</span>
+              <span className="font-semibold text-green-600">{pct(metrics.successRate)}</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full rounded-full bg-green-500 transition-all"
+                style={{ width: pct(metrics.successRate) }}
+              />
+            </div>
+          </div>
+
+          {/* Fallback 비율 바 */}
+          <div>
+            <div className="mb-1 flex justify-between text-xs text-gray-500">
+              <span>DB Fallback 비율</span>
+              <span className="font-semibold text-amber-600">{pct(metrics.fallbackRate)}</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full rounded-full bg-amber-400 transition-all"
+                style={{ width: pct(metrics.fallbackRate) }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── 메인 컴포넌트 ────────────────────────────────────────────
 
-type Tab = 'event' | 'coupon'
+type Tab = 'event' | 'coupon' | 'metrics'
 
 function AdminPage() {
   const { user }    = useAuth()
@@ -270,8 +381,9 @@ function AdminPage() {
       {/* 탭 */}
       <div className="flex gap-2 border-b border-gray-200">
         {([
-          { key: 'event',  label: '🎫 이벤트 등록' },
-          { key: 'coupon', label: '🏷 쿠폰 등록' },
+          { key: 'event',   label: '🎫 이벤트 등록' },
+          { key: 'coupon',  label: '🏷 쿠폰 등록' },
+          { key: 'metrics', label: '📊 쿠폰 메트릭스' },
         ] as { key: Tab; label: string }[]).map((tab) => (
           <button
             key={tab.key}
@@ -289,8 +401,9 @@ function AdminPage() {
       </div>
 
       {/* 탭 콘텐츠 */}
-      {activeTab === 'event'  && <EventCreateForm />}
-      {activeTab === 'coupon' && <CouponCreateForm />}
+      {activeTab === 'event'   && <EventCreateForm />}
+      {activeTab === 'coupon'  && <CouponCreateForm />}
+      {activeTab === 'metrics' && <CouponMetricsForm />}
 
     </div>
   )

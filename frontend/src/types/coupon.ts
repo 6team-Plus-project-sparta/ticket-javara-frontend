@@ -44,3 +44,24 @@ export interface SliceResponse<T> {
   size: number
   number: number
 }
+
+/** GET /api/admin/coupons/{couponId}/metrics 성공 응답 */
+export interface CouponMetrics {
+  couponId: number
+  /** 총 발급 시도 횟수 */
+  totalAttempts: number
+  /** Redis DECR 성공 횟수 */
+  redisSuccess: number
+  /** DB fallback 처리 횟수 */
+  dbFallback: number
+  /** 성공률 (0.0 ~ 1.0) */
+  successRate: number
+  /** fallback 비율 (0.0 ~ 1.0) */
+  fallbackRate: number
+  createdAt: string
+}
+
+/** 메트릭스 조회 실패 응답 */
+export interface CouponMetricsError {
+  error: string
+}
