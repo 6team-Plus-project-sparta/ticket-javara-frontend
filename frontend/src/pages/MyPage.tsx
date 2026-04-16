@@ -66,22 +66,27 @@ function MenuRow({
 
 function MyPage() {
   const navigate        = useNavigate()
-  const { user: ctxUser, logout } = useAuth()
+  const { user: ctxUser, logout, isInitializing } = useAuth()
 
   const [user, setUser]       = useState<UserProfile | null>(ctxUser)
-  const [loading, setLoading] = useState(!ctxUser)
+  const [loading, setLoading] = useState(true)
 
-  // Context에 user가 없으면 직접 조회
+  // Context에 user가 있으면 바로 사용, 없으면 직접 조회
   useEffect(() => {
+    if (isInitializing) return // 아직 초기화 중이면 대기
+
     if (ctxUser) {
       setUser(ctxUser)
+      setLoading(false)
       return
     }
+
+    // 토큰은 있지만 user가 없는 경우 직접 조회
     getMe()
-      .then(setUser)
+      .then((profile) => setUser(profile))
       .catch(() => navigate('/login', { replace: true }))
       .finally(() => setLoading(false))
-  }, [ctxUser, navigate])
+  }, [ctxUser, isInitializing, navigate])
 
   const handleLogout = () => {
     logout()
@@ -109,7 +114,7 @@ function MyPage() {
             className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white"
             aria-hidden="true"
           >
-            {user.nickname.charAt(0)}
+            {user.nickname?.charAt(0) ?? '?'}
           </div>
           <div>
             <h2 id="profile-heading" className="text-base font-bold text-gray-900">

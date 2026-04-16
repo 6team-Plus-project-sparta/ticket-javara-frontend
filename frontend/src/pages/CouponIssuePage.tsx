@@ -36,6 +36,8 @@ interface CouponInfo {
   startAt: string
   expiredAt: string
   description?: string
+  /** 배너 이미지 URL — 있으면 이미지, 없으면 그라디언트 배너 표시 */
+  imageUrl?: string
 }
 
 // ─── 현재 진행 중인 쿠폰 목록 ────────────────────────────────
@@ -135,25 +137,39 @@ function CouponIssueCard({ coupon }: { coupon: CouponInfo }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-md">
 
-      {/* 상단 배너 영역 */}
-      <div className="relative bg-gradient-to-br from-blue-600 to-indigo-600 px-6 py-8 text-white">
-        {/* 배경 장식 */}
-        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" aria-hidden="true" />
-        <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" aria-hidden="true" />
-
-        <div className="relative z-10">
-          <p className="mb-1 text-xs font-medium uppercase tracking-widest text-blue-200">
-            선착순 한정 쿠폰
-          </p>
-          {/* 할인 금액 */}
-          <p className="text-4xl font-extrabold">
-            {formatPrice(coupon.discountAmount)}
-            <span className="ml-2 text-lg font-normal text-blue-200">할인</span>
-          </p>
-          {/* 쿠폰명 */}
-          <p className="mt-2 text-base font-semibold text-blue-100">{coupon.name}</p>
+      {/* 상단 배너 — imageUrl 있으면 이미지, 없으면 그라디언트 */}
+      {coupon.imageUrl ? (
+        <div className="relative h-44 w-full overflow-hidden">
+          <img
+            src={coupon.imageUrl}
+            alt={coupon.name}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-5 py-4">
+            <p className="text-2xl font-extrabold text-white">
+              {formatPrice(coupon.discountAmount)}
+              <span className="ml-1.5 text-sm font-normal text-white/80">할인</span>
+            </p>
+            <p className="text-xs text-white/80">{coupon.name}</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="relative bg-gradient-to-br from-blue-600 to-indigo-600 px-6 py-8 text-white">
+          {/* 배경 장식 */}
+          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" aria-hidden="true" />
+          <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" aria-hidden="true" />
+          <div className="relative z-10">
+            <p className="mb-1 text-xs font-medium uppercase tracking-widest text-blue-200">
+              선착순 한정 쿠폰
+            </p>
+            <p className="text-4xl font-extrabold">
+              {formatPrice(coupon.discountAmount)}
+              <span className="ml-2 text-lg font-normal text-blue-200">할인</span>
+            </p>
+            <p className="mt-2 text-base font-semibold text-blue-100">{coupon.name}</p>
+          </div>
+        </div>
+      )}
 
       {/* 점선 구분선 (티켓 절취선 느낌) */}
       <div className="flex items-center">

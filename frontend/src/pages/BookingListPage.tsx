@@ -185,14 +185,14 @@ function BookingListPage() {
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
       }
       const res = await getMyBookings(params)
-      setOrders(res.content)
-      setTotalPages(res.totalPages)
+      setOrders(res.content ?? [])
+      setTotalPages(res.totalPages ?? 0)
     } catch {
       toast.error('예매 내역을 불러오지 못했습니다.')
     } finally {
       setLoading(false)
     }
-  }, [currentPage, statusFilter, toast])
+  }, [currentPage, statusFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchBookings()

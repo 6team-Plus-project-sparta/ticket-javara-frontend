@@ -133,8 +133,8 @@ const SeatButton = ({
       aria-pressed={isMyHold}
       title={seat.seatNumber}
       className={[
-        'relative flex h-8 w-8 items-center justify-center rounded-sm border text-xs font-medium',
-        'transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1',
+        'relative flex h-6 w-6 items-center justify-center rounded-t-lg rounded-b-sm border text-[9px] font-medium',
+        'transition-colors focus:outline-none focus:ring-1 focus:ring-primary-400 focus:ring-offset-1',
         colorClass,
         isLoading ? 'opacity-50' : '',
       ].join(' ')}
@@ -151,7 +151,7 @@ const SeatButton = ({
   )
 }
 
-/** 좌석 그리드 — 행(row) 기준으로 그룹핑해서 렌더링 */
+/** 좌석 그리드 — 극장 스타일 (무대 상단, 부채꼴 느낌, 행 라벨 좌측) */
 function SeatGrid({
   seats,
   myHoldIds,
@@ -163,7 +163,7 @@ function SeatGrid({
   loadingIds: Set<number>
   onSeatClick: (seat: Seat) => void
 }) {
-  // 행(row) 기준으로 좌석 그룹핑 — useMemo로 seats가 바뀔 때만 재계산
+  // 행(row) 기준으로 좌석 그룹핑
   const rows = useMemo(() => {
     const map = new Map<string, Seat[]>()
     for (const seat of seats) {
@@ -171,35 +171,69 @@ function SeatGrid({
       list.push(seat)
       map.set(seat.row, list)
     }
-    // 행 이름 오름차순 정렬
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
   }, [seats])
 
   if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-gray-400">좌석 정보가 없습니다.</p>
+    return <p className="py-12 text-center text-sm text-gray-400">좌석 정보가 없습니다.</p>
   }
 
+  const maxCols = Math.max(...rows.map(([, s]) => s.length))
+
   return (
-    <div className="overflow-x-auto">
-      {/* 무대 표시 */}
-      <div className="mb-6 flex justify-center">
-        <div className="rounded-md bg-gray-200 px-10 py-2 text-xs font-medium text-gray-500">
-          STAGE
+    <div className="overflow-x-auto px-4 py-6">
+
+      {/* ── 무대 ── */}
+      <div className="mb-8 flex flex-col items-center gap-1">
+        {/* 커튼 장식 */}
+        <div className="flex w-full max-w-lg items-end justify-between px-2">
+          <div className="h-8 w-6 rounded-b-full bg-gray-300 opacity-60" />
+          <div className="h-10 w-6 rounded-b-full bg-gray-300 opacity-60" />
+          <div className="h-8 w-6 rounded-b-full bg-gray-300 opacity-60" />
+          <div className="h-6 w-6 rounded-b-full bg-gray-300 opacity-60" />
+          <div className="h-8 w-6 rounded-b-full bg-gray-300 opacity-60" />
+          <div className="h-10 w-6 rounded-b-full bg-gray-300 opacity-60" />
+          <div className="h-8 w-6 rounded-b-full bg-gray-300 opacity-60" />
         </div>
+        {/* 무대 본체 — 위쪽이 살짝 넓은 사다리꼴 느낌 */}
+        <div
+          className="flex items-center justify-center bg-gradient-to-b from-gray-200 to-gray-300 shadow-inner"
+          style={{
+            width: '100%',
+            maxWidth: '480px',
+            height: '36px',
+            borderRadius: '50% 50% 0 0 / 20px 20px 0 0',
+          }}
+        >
+          <span className="text-xs font-bold tracking-[0.3em] text-gray-500 uppercase">
+            S T A G E
+          </span>
+        </div>
+        {/* 무대 아래 그림자 라인 */}
+        <div className="h-1 w-full max-w-lg rounded-full bg-gray-200 opacity-60" />
       </div>
 
-      <div className="flex flex-col gap-1.5 items-start">
-        {rows.map(([rowLabel, rowSeats]) => (
-          <div key={rowLabel} className="flex items-center gap-1.5">
-            {/* 행 라벨 */}
-            <span className="w-6 shrink-0 text-center text-xs font-medium text-gray-400">
-              {rowLabel}
-            </span>
-            {/* 좌석 버튼들 */}
-            <div className="flex gap-1">
-              {rowSeats
-                .sort((a, b) => a.col - b.col)
-                .map((seat) => (
+      {/* ── 좌석 행 ── */}
+      <div className="flex flex-col items-center gap-1.5">
+        {rows.map(([rowLabel, rowSeats], rowIdx) => {
+          const sorted = [...rowSeats].sort((a, b) => a.col - b.col)
+          // 앞 행일수록 살짝 좁게 — 부채꼴 느낌
+          const scale = 1 - (rows.length - 1 - rowIdx) * 0.008
+
+          return (
+            <div
+              key={rowLabel}
+              className="flex items-center gap-1"
+              style={{ transform: `scaleX(${scale})` }}
+            >
+              {/* 행 라벨 */}
+              <span className="w-5 shrink-0 text-center text-xs font-semibold text-gray-400 select-none">
+                {rowLabel}
+              </span>
+
+              {/* 좌석 버튼들 */}
+              <div className="flex gap-[3px]">
+                {sorted.map((seat) => (
                   <SeatButton
                     key={seat.seatId}
                     seat={seat}
@@ -208,10 +242,30 @@ function SeatGrid({
                     onClick={() => onSeatClick(seat)}
                   />
                 ))}
+              </div>
+
+              {/* 오른쪽 행 라벨 */}
+              <span className="w-5 shrink-0 text-center text-xs font-semibold text-gray-400 select-none">
+                {rowLabel}
+              </span>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
+
+      {/* ── 입구 표시 ── */}
+      <div className="mt-6 flex justify-center">
+        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          <span className="text-xs font-semibold text-gray-500 tracking-widest">입구</span>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 9l7 7 7-7" />
+          </svg>
+        </div>
+      </div>
+
     </div>
   )
 }
@@ -316,7 +370,7 @@ function SeatSelectionPage() {
     } finally {
       setSeatsLoading(false)
     }
-  }, [eventId, toast])
+  }, [eventId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (activeSectionId !== null) fetchSeats(activeSectionId)
@@ -488,9 +542,9 @@ function SeatSelectionPage() {
           )}
 
           {/* 좌석 그리드 */}
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <div className="rounded-2xl border border-gray-200 bg-gray-100 shadow-inner">
             {seatsLoading ? (
-              <LoadingSpinner />
+              <div className="py-16"><LoadingSpinner /></div>
             ) : (
               <SeatGrid
                 seats={seats}
