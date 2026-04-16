@@ -7,13 +7,17 @@
  * <Outlet />: react-router-dom이 자식 라우트의 페이지 컴포넌트를 여기에 렌더링한다.
  */
 
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Header, SearchBar } from '@/components'
 import { useAuth } from '@/contexts/AuthContext'
 
 function MainLayout() {
   const { isLoggedIn, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // 채팅 페이지는 뷰포트 전체를 차지하고 내부만 스크롤
+  const isChatPage = location.pathname === '/chat'
 
   const handleLogout = () => {
     logout()
@@ -21,7 +25,7 @@ function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={['bg-gray-50', isChatPage ? 'h-screen flex flex-col overflow-hidden' : 'min-h-screen'].join(' ')}>
       <Header
         isLoggedIn={isLoggedIn}
         onLogout={handleLogout}
@@ -32,7 +36,10 @@ function MainLayout() {
         }
       />
       {/* 페이지 본문 */}
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className={isChatPage
+        ? 'flex-1 overflow-hidden'
+        : 'mx-auto max-w-7xl px-4 py-6'
+      }>
         <Outlet />
       </main>
     </div>
