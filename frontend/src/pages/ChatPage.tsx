@@ -117,13 +117,13 @@ function ChatPage() {
   const { toast } = useToast()
 
   // 채팅방 상태
-  const [room, setRoom]           = useState<ChatRoom | null>(null)
+  const [room, setRoom]               = useState<ChatRoom | null>(null)
   const [roomLoading, setRoomLoading] = useState(true)
 
   // 메시지 목록
-  const [messages, setMessages]   = useState<ChatMessage[]>([])
-  const [nextCursor, setNextCursor] = useState<number | null>(null)
-  const [hasNext, setHasNext]     = useState(false)
+  const [messages, setMessages]         = useState<ChatMessage[]>([])
+  const [nextCursor, setNextCursor]     = useState<number | null>(null)
+  const [hasNext, setHasNext]           = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
 
   // 입력창
@@ -132,52 +132,67 @@ function ChatPage() {
 
   // 종료 모달
   const [closeModalOpen, setCloseModalOpen] = useState(false)
-  const [closing, setClosing]     = useState(false)
+  const [closing, setClosing]               = useState(false)
 
   // 스크롤 ref
-  const bottomRef   = useRef<HTMLDivElement>(null)
-  const listRef     = useRef<HTMLDivElement>(null)
+  const bottomRef        = useRef<HTMLDivElement>(null)
+  const listRef          = useRef<HTMLDivElement>(null)
   const prevScrollHeight = useRef(0)
 
-  // ── 채팅방 생성 / 조회 ───────────────────────────────────────
+  // 무한 호출 방지용 ref
+  const hasNextRef        = useRef(false)
+  const historyLoadingRef = useRef(false)
+  const nextCursorRef     = useRef<number | null>(null)
+  const roomRef           = useRef<ChatRoom | null>(null)
+
+  // ref를 state와 동기화
+  hasNextRef.current        = hasNext
+  historyLoadingRef.current = historyLoading
+  nextCursorRef.current     = nextCursor
+  roomRef.current           = room
+
+  // ── 채팅방 생성 (마운트 1회만) ───────────────────────────────
   useEffect(() => {
     createChatRoom()
       .then(setRoom)
       .catch(() => toast.error('채팅방을 불러오지 못했습니다.'))
       .finally(() => setRoomLoading(false))
-  }, [toast]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 초기 메시지 조회 (room이 처음 설정될 때 1회) ─────────────
   useEffect(() => {
     if (!room) return
     getChatMessages(room.chatRoomId, { size: MESSAGE_PAGE_SIZE })
       .then((res) => {
-        // 서버는 최신순으로 반환 → 화면 표시는 오래된 순
-        setMessages([...res.messages].reverse())
-        setNextCursor(res.nextCursor)
-        setHasNext(res.hasNext)
+        setMessages([...(res.messages ?? [])].reverse())
+        setNextCursor(res.nextCursor ?? null)
+        setHasNext(res.hasNext ?? false)
       })
       .catch(() => toast.error('메시지를 불러오지 못했습니다.'))
-  }, [room]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [room?.chatRoomId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 이전 메시지 추가 조회 (cursor 기반) ──────────────────────
+  // ── 이전 메시지 추가 조회 — ref 기반으로 의존성 최소화 ────────
   const loadMoreMessages = useCallback(async () => {
-    if (!room || !hasNext || historyLoading || nextCursor === null) return
+    const currentRoom   = roomRef.current
+    const currentCursor = nextCursorRef.current
+    if (!currentRoom || !hasNextRef.current || historyLoadingRef.current || currentCursor === null) return
+
     setHistoryLoading(true)
-    // 스크롤 위치 보정을 위해 현재 높이 저장
     prevScrollHeight.current = listRef.current?.scrollHeight ?? 0
     try {
-      const res = await getChatMessages(room.chatRoomId, {
-        cursor: nextCursor,
+      const res = await getChatMessages(currentRoom.chatRoomId, {
+        cursor: currentCursor,
         size: MESSAGE_PAGE_SIZE,
       })
-      setMessages((prev) => [...[...res.messages].reverse(), ...prev])
-      setNextCursor(res.nextCursor)
-      setHasNext(res.hasNext)
+      setMessages((prev) => [...[...(res.messages ?? [])].reverse(), ...prev])
+      setNextCursor(res.nextCursor ?? null)
+      setHasNext(res.hasNext ?? false)
     } catch {
       toast.error('이전 메시지를 불러오지 못했습니다.')
     } finally {
       setHistoryLoading(false)
     }
-  }, [room, hasNext, historyLoading, nextCursor]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 이전 메시지 로드 후 스크롤 위치 보정 (위로 튀지 않게)
   useEffect(() => {
@@ -193,15 +208,17 @@ function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
+  // onError를 ref로 감싸서 매 렌더마다 새 함수 참조 생성 방지
+  const onErrorRef = useRef((err: string) => toast.error(err))
+
   // ── WebSocket 연결 ────────────────────────────────────────────
   const { connectionStatus, sendMessage: stompSend } = useStompChat({
     chatRoomId: room?.chatRoomId ?? null,
     onMessage: (msg) => {
       setMessages((prev) => [...prev, msg])
-      // 내 메시지이거나 스크롤이 하단 근처면 자동 스크롤
       scrollToBottom()
     },
-    onError: (err) => toast.error(err),
+    onError: onErrorRef.current,
   })
 
   // 초기 메시지 로드 후 맨 아래로 스크롤
@@ -286,7 +303,7 @@ function ChatPage() {
   if (roomLoading) return <LoadingSpinner />
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-2xl flex-col">
+    <div className="flex h-full flex-col max-w-2xl mx-auto">
 
       {/* 상단 헤더 */}
       <div className="flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3 shadow-sm">

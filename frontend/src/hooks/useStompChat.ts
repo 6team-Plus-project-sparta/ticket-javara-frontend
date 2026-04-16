@@ -18,7 +18,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import type { ChatMessage } from '@/types/chat'
-import { getToken } from '@/utils/storage'
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
@@ -42,24 +41,26 @@ export function useStompChat({
   onError,
 }: UseStompChatOptions): UseStompChatReturn {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
-  const clientRef = useRef<Client | null>(null)
+  const clientRef   = useRef<Client | null>(null)
+  // 에러 토스트를 한 번만 띄우기 위한 플래그
+  const errorShownRef = useRef(false)
 
   useEffect(() => {
     if (!chatRoomId) return
 
-    const token = getToken()
+    const token = localStorage.getItem('accessToken')
     setConnectionStatus('connecting')
+    errorShownRef.current = false
 
     const client = new Client({
       brokerURL: WS_URL,
-      // STOMP CONNECT 프레임에 JWT 포함
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-      // 재연결 간격 (5초)
-      reconnectDelay: 5000,
+      // 자동 재연결 비활성화 — 새로고침 시에만 재시도
+      reconnectDelay: 0,
 
       onConnect: () => {
         setConnectionStatus('connected')
-        // 채팅방 구독
+        errorShownRef.current = false
         client.subscribe(`/sub/chat/room/${chatRoomId}`, (frame) => {
           try {
             const msg = JSON.parse(frame.body) as ChatMessage
@@ -76,12 +77,20 @@ export function useStompChat({
 
       onStompError: (frame) => {
         setConnectionStatus('error')
-        onError?.(frame.headers['message'] ?? 'STOMP 연결 오류가 발생했습니다.')
+        // 에러 토스트는 최초 1회만
+        if (!errorShownRef.current) {
+          errorShownRef.current = true
+          onError?.(frame.headers['message'] ?? 'STOMP 연결 오류가 발생했습니다.')
+        }
       },
 
       onWebSocketError: () => {
         setConnectionStatus('error')
-        onError?.('WebSocket 연결에 실패했습니다.')
+        // 에러 토스트는 최초 1회만
+        if (!errorShownRef.current) {
+          errorShownRef.current = true
+          onError?.('WebSocket 연결에 실패했습니다.')
+        }
       },
     })
 

@@ -390,9 +390,9 @@ function SearchResultPage() {
           pageData = await searchEventsV1(params)
         }
 
-        setResults(pageData.content)
-        setTotalPages(pageData.totalPages)
-        setTotalElements(pageData.totalElements)
+        setResults(pageData.content ?? [])
+        setTotalPages(pageData.totalPages ?? 0)
+        setTotalElements(pageData.totalElements ?? 0)
       } catch {
         setResults([])
         setTotalPages(0)

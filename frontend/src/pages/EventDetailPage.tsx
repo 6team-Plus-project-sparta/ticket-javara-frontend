@@ -40,7 +40,8 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
  * - API 명세에 status 필드가 없으므로 saleStartAt/saleEndAt/eventDate로 추론
  */
 function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED' {
-  const totalRemaining = event.sections.reduce((sum, s) => sum + s.remainingSeats, 0)
+  if (!event.sections || event.sections.length === 0) return 'ON_SALE'
+  const totalRemaining = event.sections.reduce((sum, s) => sum + (s.remainingSeats ?? 0), 0)
   if (totalRemaining === 0) return 'SOLD_OUT'
 
   const now = Date.now()
@@ -213,7 +214,9 @@ function EventDetailPage() {
   }
 
   const status  = resolveEventStatus(event)
-  const minPrice = Math.min(...event.sections.map((s) => s.price))
+  const minPrice = event.sections.length > 0
+    ? Math.min(...event.sections.map((s) => s.price))
+    : 0
   const totalRemaining = event.sections.reduce((sum, s) => sum + s.remainingSeats, 0)
 
   return (
