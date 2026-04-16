@@ -32,7 +32,10 @@ export const getEvents = async (params: EventListParams): Promise<PageResponse<E
 // 이벤트 상세 조회
 export const getEventDetail = async (eventId: number): Promise<EventDetail> => {
   const response = await apiClient.get<ApiWrapper<EventDetail>>(`/events/${eventId}`)
-  return unwrap(response.data)
+  console.log('[getEventDetail] raw:', response.data)
+  const result = unwrap(response.data)
+  console.log('[getEventDetail] unwrapped:', result)
+  return result
 }
 
 // 이벤트 검색 v1 (캐시 없음 — 성능 기준선)
