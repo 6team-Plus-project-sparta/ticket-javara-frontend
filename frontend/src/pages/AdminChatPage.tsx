@@ -313,7 +313,11 @@ function AdminChatPage() {
               </div>
 
               {/* 메시지 리스트 */}
+<<<<<<< HEAD
+              <div className="flex-1 overflow-y-auto bg-slate-100 px-5 py-4 space-y-3">
+=======
               <div className="flex-1 overflow-y-auto bg-gray-50 px-5 py-4 space-y-3">
+>>>>>>> dev
                 {messagesLoading ? (
                   <LoadingSpinner />
                 ) : messages.length === 0 ? (
@@ -331,10 +335,17 @@ function AdminChatPage() {
                         <div className={['flex flex-col gap-0.5', isMe ? 'items-end' : 'items-start'].join(' ')}>
                           <span className="text-xs text-gray-400">{msg.senderNickname}</span>
                           <div className={[
+<<<<<<< HEAD
+                            'max-w-xs rounded-2xl px-4 py-2.5 text-sm break-words shadow-sm',
+                            isMe
+                              ? 'rounded-tr-sm bg-orange-100 text-gray-900'
+                              : 'rounded-tl-sm border border-blue-100 bg-blue-50 text-gray-900',
+=======
                             'max-w-xs rounded-2xl px-4 py-2.5 text-sm break-words',
                             isMe
                               ? 'rounded-tr-sm bg-brand-700 text-white'
                               : 'rounded-tl-sm border border-gray-100 bg-white text-gray-800 shadow-sm',
+>>>>>>> dev
                           ].join(' ')}>
                             {msg.content}
                           </div>

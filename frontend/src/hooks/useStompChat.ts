@@ -1,18 +1,11 @@
 /**
- * useStompChat — STOMP WebSocket 채팅 훅
+ * useStompChat — SockJS + STOMP WebSocket 채팅 훅
  *
- * 역할:
- * - WebSocket 연결 / 해제 관리
- * - 채팅방 구독 (/sub/chat/room/{chatRoomId})
- * - 메시지 발행 (/pub/chat/message)
- * - 연결 상태 노출 (connecting / connected / disconnected / error)
- *
- * 사용 예시:
- *   const { connectionStatus, sendMessage, disconnect } = useStompChat({
- *     chatRoomId,
- *     token,
- *     onMessage: (msg) => setMessages(prev => [...prev, msg]),
- *   })
+ * 테스트 HTML 클라이언트와 동일한 방식:
+ * - SockJS로 /ws-stomp 연결
+ * - CONNECT 헤더에 Authorization: Bearer {token}
+ * - 구독: /sub/chat/room/{chatRoomId}
+ * - 발행: /pub/chat/message
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -33,7 +26,8 @@ interface UseStompChatReturn {
   disconnect: () => void
 }
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws-stomp'
+// SockJS 엔드포인트 — http:// 사용 (SockJS 규격)
+const WS_ENDPOINT = (import.meta.env.VITE_WS_URL ?? 'http://localhost:8080/ws-stomp') as string
 
 export function useStompChat({
   chatRoomId,
@@ -41,8 +35,12 @@ export function useStompChat({
   onError,
 }: UseStompChatOptions): UseStompChatReturn {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
+<<<<<<< HEAD
+  const clientRef     = useRef<Client | null>(null)
+=======
   const clientRef   = useRef<Client | null>(null)
   // 에러 토스트를 한 번만 띄우기 위한 플래그
+>>>>>>> dev
   const errorShownRef = useRef(false)
 
   useEffect(() => {
@@ -51,16 +49,38 @@ export function useStompChat({
     const token = localStorage.getItem('accessToken')
     setConnectionStatus('connecting')
     errorShownRef.current = false
+<<<<<<< HEAD
+    console.log('[useStompChat] 연결 시도 chatRoomId:', chatRoomId, 'endpoint:', WS_ENDPOINT)
+
+    const client = new Client({
+      // SockJS 팩토리 — index.html CDN으로 로드된 window.SockJS 사용
+      webSocketFactory: () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new (window as any).SockJS(WS_ENDPOINT)
+      },
+
+      // STOMP CONNECT 프레임 헤더에 JWT 포함
+      connectHeaders: token
+        ? { Authorization: `Bearer ${token}` }
+        : {},
+
+      // 자동 재연결 비활성화
+=======
 
     const client = new Client({
       brokerURL: WS_URL,
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       // 자동 재연결 비활성화 — 새로고침 시에만 재시도
+>>>>>>> dev
       reconnectDelay: 0,
 
       onConnect: () => {
         setConnectionStatus('connected')
         errorShownRef.current = false
+<<<<<<< HEAD
+
+=======
+>>>>>>> dev
         client.subscribe(`/sub/chat/room/${chatRoomId}`, (frame) => {
           try {
             const msg = JSON.parse(frame.body) as ChatMessage
@@ -77,7 +97,10 @@ export function useStompChat({
 
       onStompError: (frame) => {
         setConnectionStatus('error')
+<<<<<<< HEAD
+=======
         // 에러 토스트는 최초 1회만
+>>>>>>> dev
         if (!errorShownRef.current) {
           errorShownRef.current = true
           onError?.(frame.headers['message'] ?? 'STOMP 연결 오류가 발생했습니다.')
@@ -86,7 +109,10 @@ export function useStompChat({
 
       onWebSocketError: () => {
         setConnectionStatus('error')
+<<<<<<< HEAD
+=======
         // 에러 토스트는 최초 1회만
+>>>>>>> dev
         if (!errorShownRef.current) {
           errorShownRef.current = true
           onError?.('WebSocket 연결에 실패했습니다.')
@@ -102,9 +128,8 @@ export function useStompChat({
       clientRef.current = null
       setConnectionStatus('disconnected')
     }
-  }, [chatRoomId]) // chatRoomId 바뀌면 재연결
+  }, [chatRoomId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 메시지 발행
   const sendMessage = useCallback((content: string) => {
     const client = clientRef.current
     if (!client?.connected || !chatRoomId) return
@@ -114,7 +139,6 @@ export function useStompChat({
     })
   }, [chatRoomId])
 
-  // 수동 연결 해제
   const disconnect = useCallback(() => {
     clientRef.current?.deactivate()
     clientRef.current = null

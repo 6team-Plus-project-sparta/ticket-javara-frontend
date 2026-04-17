@@ -25,8 +25,10 @@ export interface BookingDetail {
   bookingId: number
   seatInfo: string
   originalPrice: number
-  ticketCode: string
+  ticketCode: string | null
   status: 'CONFIRMED' | 'CANCELLED' | 'PENDING'
+  /** 백엔드에서 추가된 이벤트 타이틀 */
+  eventTitle?: string
 }
 
 export interface CouponUsed {
@@ -52,6 +54,8 @@ export interface OrderDetail {
   couponUsed: CouponUsed | null
   payment: PaymentInfo | null
   createdAt: string
+  /** 백엔드에서 추가된 이벤트 타이틀 */
+  eventTitle?: string
 }
 
 export interface CancelOrderResponse {
