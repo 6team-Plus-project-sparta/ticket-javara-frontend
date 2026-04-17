@@ -26,6 +26,7 @@ function unwrap<T>(data: ApiWrapper<T> | T): T {
 // 이벤트 목록 조회
 export const getEvents = async (params: EventListParams): Promise<PageResponse<EventSummary>> => {
   const response = await apiClient.get<ApiWrapper<PageResponse<EventSummary>>>('/events', { params })
+<<<<<<< HEAD
   console.log('[getEvents] raw:', response.data)
   const result = unwrap(response.data)
   console.log('[getEvents] unwrapped:', result)
@@ -40,6 +41,9 @@ export const getEvents = async (params: EventListParams): Promise<PageResponse<E
   }
 
   return data
+=======
+  return unwrap(response.data)
+>>>>>>> dev
 }
 
 // 이벤트 상세 조회

@@ -35,7 +35,12 @@ export function useStompChat({
   onError,
 }: UseStompChatOptions): UseStompChatReturn {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
+<<<<<<< HEAD
   const clientRef     = useRef<Client | null>(null)
+=======
+  const clientRef   = useRef<Client | null>(null)
+  // 에러 토스트를 한 번만 띄우기 위한 플래그
+>>>>>>> dev
   const errorShownRef = useRef(false)
 
   useEffect(() => {
@@ -44,6 +49,7 @@ export function useStompChat({
     const token = localStorage.getItem('accessToken')
     setConnectionStatus('connecting')
     errorShownRef.current = false
+<<<<<<< HEAD
     console.log('[useStompChat] 연결 시도 chatRoomId:', chatRoomId, 'endpoint:', WS_ENDPOINT)
 
     const client = new Client({
@@ -59,12 +65,22 @@ export function useStompChat({
         : {},
 
       // 자동 재연결 비활성화
+=======
+
+    const client = new Client({
+      brokerURL: WS_URL,
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      // 자동 재연결 비활성화 — 새로고침 시에만 재시도
+>>>>>>> dev
       reconnectDelay: 0,
 
       onConnect: () => {
         setConnectionStatus('connected')
         errorShownRef.current = false
+<<<<<<< HEAD
 
+=======
+>>>>>>> dev
         client.subscribe(`/sub/chat/room/${chatRoomId}`, (frame) => {
           try {
             const msg = JSON.parse(frame.body) as ChatMessage
@@ -81,6 +97,10 @@ export function useStompChat({
 
       onStompError: (frame) => {
         setConnectionStatus('error')
+<<<<<<< HEAD
+=======
+        // 에러 토스트는 최초 1회만
+>>>>>>> dev
         if (!errorShownRef.current) {
           errorShownRef.current = true
           onError?.(frame.headers['message'] ?? 'STOMP 연결 오류가 발생했습니다.')
@@ -89,6 +109,10 @@ export function useStompChat({
 
       onWebSocketError: () => {
         setConnectionStatus('error')
+<<<<<<< HEAD
+=======
+        // 에러 토스트는 최초 1회만
+>>>>>>> dev
         if (!errorShownRef.current) {
           errorShownRef.current = true
           onError?.('WebSocket 연결에 실패했습니다.')
