@@ -53,11 +53,6 @@ function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED
     : new Date(event.eventDate).getTime()
   if (endTime < Date.now()) return 'ENDED'
 
-  const endTime = event.saleEndAt
-    ? new Date(event.saleEndAt).getTime()
-    : new Date(event.eventDate).getTime()
-  if (endTime < Date.now()) return 'ENDED'
-
   return 'ON_SALE'
 }
 

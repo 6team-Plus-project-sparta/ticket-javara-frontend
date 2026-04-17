@@ -319,7 +319,7 @@ function BookingListPage() {
         {cancelTarget && (
           <div className="space-y-2">
             <p className="font-medium text-gray-800">{cancelTarget.eventTitle}</p>
-            <p className="text-gray-500">{formatDate(cancelTarget.eventDate)}</p>
+            <p className="text-gray-500">{cancelTarget.eventDate ? formatDate(cancelTarget.eventDate) : '-'}</p>
             <p className="text-gray-500">{cancelTarget.venueName}</p>
             <div className="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
               취소 후에는 되돌릴 수 없으며, 환불은 영업일 기준 3~5일 소요됩니다.
