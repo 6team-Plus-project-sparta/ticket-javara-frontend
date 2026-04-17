@@ -44,6 +44,7 @@ export function useStompChat({
     const token = localStorage.getItem('accessToken')
     setConnectionStatus('connecting')
     errorShownRef.current = false
+    console.log('[useStompChat] 연결 시도 chatRoomId:', chatRoomId, 'endpoint:', WS_ENDPOINT)
 
     const client = new Client({
       // SockJS 팩토리 — index.html CDN으로 로드된 window.SockJS 사용

@@ -26,7 +26,10 @@ function unwrap<T>(response: { data: ApiWrapper<T> | T }): T {
 // 채팅방 생성 (없으면 생성, 있으면 기존 방 반환)
 export const createChatRoom = async (): Promise<ChatRoom> => {
   const response = await apiClient.post<ApiWrapper<ChatRoom>>('/chat/rooms')
-  return unwrap(response)
+  console.log('[createChatRoom] raw response.data:', response.data)
+  const result = unwrap(response)
+  console.log('[createChatRoom] unwrapped:', result)
+  return result
 }
 
 // 채팅 메시지 목록 조회

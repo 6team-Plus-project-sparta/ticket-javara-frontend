@@ -154,8 +154,14 @@ function ChatPage() {
   // ── 채팅방 생성 (마운트 1회만) ───────────────────────────────
   useEffect(() => {
     createChatRoom()
-      .then(setRoom)
-      .catch(() => toast.error('채팅방을 불러오지 못했습니다.'))
+      .then((room) => {
+        console.log('[ChatPage] 채팅방 생성/조회:', room)
+        setRoom(room)
+      })
+      .catch((e) => {
+        console.error('[ChatPage] 채팅방 생성 실패:', e)
+        toast.error('채팅방을 불러오지 못했습니다.')
+      })
       .finally(() => setRoomLoading(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
