@@ -7,6 +7,8 @@ export interface EventListParams {
   size?: number
   sort?: string
   category?: EventCategory
+  /** 상태 필터: ON_SALE | SOLD_OUT | CANCELLED | ENDED */
+  status?: 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED'
 }
 
 export interface EventSearchParams {
@@ -30,6 +32,8 @@ export interface EventSummary {
   minPrice: number
   remainingSeats: number
   thumbnailUrl: string
+  /** 백엔드가 내려주는 이벤트 상태 */
+  status?: 'ON_SALE' | 'SOLD_OUT' | 'ENDED' | 'CANCELLED'
 }
 
 export interface Venue {
@@ -58,6 +62,8 @@ export interface EventDetail {
   saleEndAt?: string
   /** 회차 번호 */
   roundNumber?: number
+  /** 이벤트 상태 (백엔드가 내려주는 경우) */
+  status?: 'ON_SALE' | 'SOLD_OUT' | 'ENDED' | 'CANCELLED'
   description: string
   thumbnailUrl: string
   sections: EventSection[]

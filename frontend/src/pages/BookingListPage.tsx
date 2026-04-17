@@ -11,8 +11,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMyBookings } from '@/api/users'
-import { cancelOrder } from '@/api/orders'
+import { cancelOrder, getOrder } from '@/api/orders'
 import type { OrderSummary, BookingListParams } from '@/types/user'
+import type { OrderDetail } from '@/types/order'
 import type { AxiosError } from 'axios'
 import {
   Button,
@@ -47,17 +48,6 @@ const formatDate = (dateStr: string) =>
 
 const formatPrice = (price: number) => `${price.toLocaleString('ko-KR')}원`
 
-/**
- * 취소 가능 여부 판단
- * - CONFIRMED 상태이고 공연 시작 24시간 전까지만 취소 가능
- * - eventDate 정보가 없으면 버튼 노출 (서버에서 최종 검증)
- */
-function isCancellable(order: OrderSummary): boolean {
-  if (order.status !== 'CONFIRMED') return false
-  const deadline = new Date(order.eventDate).getTime() - 24 * 60 * 60 * 1000
-  return Date.now() < deadline
-}
-
 // ─── 에러 코드 → 메시지 ──────────────────────────────────────
 
 function getCancelErrorMessage(error: unknown): string {
@@ -75,12 +65,14 @@ function getCancelErrorMessage(error: unknown): string {
 /** 주문 카드 */
 function OrderCard({
   order,
+  detail,
   onCancel,
 }: {
   order: OrderSummary
+  detail?: OrderDetail
   onCancel: (order: OrderSummary) => void
 }) {
-  const cancellable = isCancellable(order)
+  const cancellable = order.status === 'CONFIRMED' || order.status === 'PENDING'
 
   return (
     <article className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
@@ -93,33 +85,55 @@ function OrderCard({
         <StatusBadge status={order.status} />
       </div>
 
-      {/* 공연 정보 */}
-      <div>
-        <h3 className="text-base font-bold text-gray-900 leading-snug">
-          {order.eventTitle}
-        </h3>
-        <div className="mt-1 space-y-0.5 text-sm text-gray-500">
-          <p>📅 {formatDate(order.eventDate)}</p>
-          <p>📍 {order.venueName}</p>
+      {/* 이벤트 정보 — 상세 조회 결과 */}
+      {detail?.event && (
+        <div>
+          <h3 className="text-base font-bold text-gray-900 leading-snug">
+            {(detail.event as { title?: string }).title ?? '공연 정보'}
+          </h3>
+          <div className="mt-1 space-y-0.5 text-sm text-gray-500">
+            {(detail.event as { eventDate?: string }).eventDate && (
+              <p>📅 {formatDate((detail.event as { eventDate: string }).eventDate)}</p>
+            )}
+            {(detail.event as { venueName?: string }).venueName && (
+              <p>📍 {(detail.event as { venueName: string }).venueName}</p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 좌석 목록 */}
-      <ul className="space-y-1">
-        {order.items.map((item) => (
-          <li key={item.seatNumber} className="flex justify-between text-sm">
-            <span className="text-gray-600">
-              <span className="font-medium">{item.sectionName}</span> · {item.seatNumber}
-            </span>
-            <span className="text-gray-400">{formatPrice(item.originalPrice)}</span>
-          </li>
-        ))}
-      </ul>
+      {/* 공연 정보 — OrderSummary에 있을 경우 */}
+      {!detail?.event && order.eventTitle && (
+        <div>
+          <h3 className="text-base font-bold text-gray-900 leading-snug">
+            {order.eventTitle}
+          </h3>
+          <div className="mt-1 space-y-0.5 text-sm text-gray-500">
+            {order.eventDate && <p>📅 {formatDate(order.eventDate)}</p>}
+            {order.venueName && <p>📍 {order.venueName}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* 좌석 목록 — 상세 조회 결과 */}
+      {(detail?.bookings ?? []).length > 0 && (
+        <div>
+          <p className="mb-1.5 text-xs font-semibold text-gray-500">예매 좌석</p>
+          <ul className="space-y-1">
+            {(detail?.bookings ?? []).map((booking) => (
+              <li key={booking.bookingId} className="flex justify-between text-sm">
+                <span className="text-gray-600">{booking.seatInfo}</span>
+                <span className="text-gray-400">{formatPrice(booking.originalPrice)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* 금액 요약 */}
       <div className="rounded-lg bg-gray-50 px-4 py-3 space-y-1 text-sm">
         <div className="flex justify-between text-gray-500">
-          <span>좌석 금액</span>
+          <span>결제 금액</span>
           <span>{formatPrice(order.totalAmount)}</span>
         </div>
         {order.discountAmount > 0 && (
@@ -139,7 +153,7 @@ function OrderCard({
         예매일: {formatDate(order.createdAt)}
       </p>
 
-      {/* 버튼 영역 */}
+      {/* 취소 버튼 */}
       {cancellable && (
         <div className="flex justify-end">
           <Button
@@ -167,9 +181,10 @@ function BookingListPage() {
   const [currentPage, setCurrentPage]   = useState(0)
 
   // 목록 상태
-  const [orders, setOrders]       = useState<OrderSummary[]>([])
-  const [totalPages, setTotalPages] = useState(0)
-  const [loading, setLoading]     = useState(true)
+  const [orders, setOrders]           = useState<OrderSummary[]>([])
+  const [orderDetails, setOrderDetails] = useState<Record<number, OrderDetail>>({})
+  const [totalPages, setTotalPages]   = useState(0)
+  const [loading, setLoading]         = useState(true)
 
   // 취소 모달 상태
   const [cancelTarget, setCancelTarget]   = useState<OrderSummary | null>(null)
@@ -185,8 +200,21 @@ function BookingListPage() {
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
       }
       const res = await getMyBookings(params)
-      setOrders(res.content ?? [])
+      const content = res.content ?? []
+      setOrders(content)
       setTotalPages(res.totalPages ?? 0)
+
+      // 각 주문의 상세 정보를 병렬로 조회 (이벤트 정보 포함)
+      const details = await Promise.allSettled(
+        content.map((order) => getOrder(order.orderId))
+      )
+      const detailMap: Record<number, OrderDetail> = {}
+      details.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          detailMap[content[idx].orderId] = result.value
+        }
+      })
+      setOrderDetails(detailMap)
     } catch {
       toast.error('예매 내역을 불러오지 못했습니다.')
     } finally {
@@ -282,6 +310,7 @@ function BookingListPage() {
             <OrderCard
               key={order.orderId}
               order={order}
+              detail={orderDetails[order.orderId]}
               onCancel={setCancelTarget}
             />
           ))}

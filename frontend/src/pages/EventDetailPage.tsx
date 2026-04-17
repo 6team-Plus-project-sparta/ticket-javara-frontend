@@ -37,15 +37,20 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
 
 /**
  * 이벤트 상태 계산
- * - API 명세에 status 필드가 없으므로 saleStartAt/saleEndAt/eventDate로 추론
+ * - 백엔드 status 필드 우선
+ * - 없으면 remainingSeats == 0 → SOLD_OUT, eventDate 지남 → ENDED
  */
-function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED' {
-  if (!event.sections || event.sections.length === 0) return 'ON_SALE'
-  const totalRemaining = event.sections.reduce((sum, s) => sum + (s.remainingSeats ?? 0), 0)
+function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED' | 'CANCELLED' {
+  if (event.status) return event.status
+
+  const totalRemaining = (event.sections ?? []).reduce((sum, s) => sum + (s.remainingSeats ?? 0), 0)
   if (totalRemaining === 0) return 'SOLD_OUT'
 
-  const now = Date.now()
-  if (event.saleEndAt && new Date(event.saleEndAt).getTime() < now) return 'ENDED'
+  const endTime = event.saleEndAt
+    ? new Date(event.saleEndAt).getTime()
+    : new Date(event.eventDate).getTime()
+  if (endTime < Date.now()) return 'ENDED'
+
   return 'ON_SALE'
 }
 
@@ -142,11 +147,17 @@ function BookingPanel({
 }: {
   eventId: number
   minPrice: number
-  status: 'ON_SALE' | 'SOLD_OUT' | 'ENDED'
+  status: 'ON_SALE' | 'SOLD_OUT' | 'ENDED' | 'CANCELLED'
   isLoggedIn: boolean
 }) {
   const navigate = useNavigate()
   const canBook = isLoggedIn && status === 'ON_SALE'
+
+  const buttonLabel =
+    status === 'SOLD_OUT'  ? '매진' :
+    status === 'ENDED'     ? '예매 종료' :
+    status === 'CANCELLED' ? '취소된 공연' :
+                             '좌석 선택하기'
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-md">
@@ -165,10 +176,15 @@ function BookingPanel({
         variant={status === 'ON_SALE' ? 'primary' : 'secondary'}
         onClick={() => navigate(`/events/${eventId}/seats`)}
       >
-        {status === 'SOLD_OUT' ? '매진' :
-         status === 'ENDED'   ? '예매 종료' :
-                                '좌석 선택하기'}
+        {buttonLabel}
       </Button>
+
+      {/* 종료/취소 안내 */}
+      {(status === 'ENDED' || status === 'CANCELLED') && (
+        <p className="mt-3 text-center text-xs text-gray-400">
+          {status === 'ENDED' ? '예매가 종료된 공연입니다.' : '취소된 공연입니다.'}
+        </p>
+      )}
 
       {/* 비로그인 안내 */}
       {!isLoggedIn && status === 'ON_SALE' && (
@@ -270,13 +286,6 @@ function EventDetailPage() {
                 )}
                 {/* 공연 일시 */}
                 <InfoRow label="공연 일시">{formatDate(event.eventDate)}</InfoRow>
-                {/* 장소 */}
-                <InfoRow label="장소">
-                  <span>
-                    {event.venue.name}
-                    <span className="ml-1 text-gray-400">({event.venue.address})</span>
-                  </span>
-                </InfoRow>
                 {/* 예매 오픈 */}
                 {event.saleStartAt && (
                   <InfoRow label="예매 오픈">{formatDate(event.saleStartAt)}</InfoRow>
@@ -285,6 +294,13 @@ function EventDetailPage() {
                 {event.saleEndAt && (
                   <InfoRow label="예매 마감">{formatDate(event.saleEndAt)}</InfoRow>
                 )}
+                {/* 장소 */}
+                <InfoRow label="장소">
+                  <span>
+                    {event.venue.name}
+                    <span className="ml-1 text-gray-400">({event.venue.address})</span>
+                  </span>
+                </InfoRow>
                 {/* 잔여석 합계 */}
                 <InfoRow label="잔여석">
                   <span className={totalRemaining === 0 ? 'text-gray-400' : 'font-semibold text-blue-600'}>
