@@ -313,11 +313,7 @@ function AdminChatPage() {
               </div>
 
               {/* 메시지 리스트 */}
-<<<<<<< HEAD
               <div className="flex-1 overflow-y-auto bg-slate-100 px-5 py-4 space-y-3">
-=======
-              <div className="flex-1 overflow-y-auto bg-gray-50 px-5 py-4 space-y-3">
->>>>>>> dev
                 {messagesLoading ? (
                   <LoadingSpinner />
                 ) : messages.length === 0 ? (

@@ -26,10 +26,7 @@ function unwrap<T>(data: ApiWrapper<T> | T): T {
 // 이벤트 목록 조회
 export const getEvents = async (params: EventListParams): Promise<PageResponse<EventSummary>> => {
   const response = await apiClient.get<ApiWrapper<PageResponse<EventSummary>>>('/events', { params })
-<<<<<<< HEAD
-  console.log('[getEvents] raw:', response.data)
   const result = unwrap(response.data)
-  console.log('[getEvents] unwrapped:', result)
 
   // 백엔드가 { content, page: { totalPages, ... } } 구조로 내려주는 경우 대응
   const data = result as PageResponse<EventSummary> & { page?: { totalPages?: number; totalElements?: number; size?: number; number?: number } }
@@ -37,22 +34,15 @@ export const getEvents = async (params: EventListParams): Promise<PageResponse<E
     data.totalPages    = data.page.totalPages ?? 0
     data.totalElements = data.page.totalElements ?? 0
     data.size          = data.page.size ?? 9
-    data.page_number   = data.page.number ?? 0
   }
 
   return data
-=======
-  return unwrap(response.data)
->>>>>>> dev
 }
 
 // 이벤트 상세 조회
 export const getEventDetail = async (eventId: number): Promise<EventDetail> => {
   const response = await apiClient.get<ApiWrapper<EventDetail>>(`/events/${eventId}`)
-  console.log('[getEventDetail] raw:', response.data)
-  const result = unwrap(response.data)
-  console.log('[getEventDetail] unwrapped:', result)
-  return result
+  return unwrap(response.data)
 }
 
 // 이벤트 검색 v1 (캐시 없음 — 성능 기준선)
