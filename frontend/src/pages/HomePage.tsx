@@ -35,10 +35,18 @@ const CATEGORIES: { label: string; value: EventCategory | 'ALL' }[] = [
   { label: '기타',     value: 'ETC' },
 ]
 
-const STATUS_TABS: { label: string; value: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED' }[] = [
+const STATUS_TABS: { label: string; value: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED' }[] = [
   { label: '전체',   value: 'ALL' },
   { label: '예매중', value: 'ON_SALE' },
   { label: '매진',   value: 'SOLD_OUT' },
+]
+
+/** 관리자 전용 탭 포함 */
+const ADMIN_STATUS_TABS: { label: string; value: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED' }[] = [
+  { label: '전체',   value: 'ALL' },
+  { label: '예매중', value: 'ON_SALE' },
+  { label: '매진',   value: 'SOLD_OUT' },
+  { label: '종료됨', value: 'ENDED' },
 ]
 
 const SORT_OPTIONS = [
@@ -143,20 +151,22 @@ function PopularKeywordsCard({
 }
 
 /** 이벤트 카드 */
-function EventCard({ event, onClick }: { event: EventSummary; onClick: () => void }) {
-  // 백엔드 status 우선, 없으면 remainingSeats로 판단
+function EventCard({ event, onClick, disabled = false }: { event: EventSummary; onClick: () => void; disabled?: boolean }) {
   const resolvedStatus = event.status ?? (event.remainingSeats === 0 ? 'SOLD_OUT' : 'ON_SALE')
   const isSoldOut = resolvedStatus === 'SOLD_OUT'
   const isEnded   = resolvedStatus === 'ENDED' || resolvedStatus === 'CANCELLED'
+  // 매진 또는 종료됨이면 클릭 불가
+  const isDisabled = disabled || isSoldOut || isEnded
 
   return (
     <article
-      onClick={onClick}
+      onClick={isDisabled ? undefined : onClick}
       role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onClick()}
+      tabIndex={isDisabled ? -1 : 0}
+      onKeyDown={(e) => !isDisabled && e.key === 'Enter' && onClick()}
       aria-label={`${event.title} 상세 보기`}
-      className="group cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md"
+      aria-disabled={isDisabled}
+      className={['group overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-shadow', isDisabled ? 'cursor-default opacity-75' : 'cursor-pointer hover:shadow-md'].join(' ')}
     >
       {/* 썸네일 */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
@@ -216,7 +226,8 @@ function EventCard({ event, onClick }: { event: EventSummary; onClick: () => voi
 function HomePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, user } = useAuth()
+  const isAdmin = user?.role === 'ADMIN'
 
   // 이벤트 목록 상태
   const [events, setEvents] = useState<EventSummary[]>([])
@@ -229,7 +240,7 @@ function HomePage() {
     () => (searchParams.get('category') as EventCategory) || 'ALL'
   )
   const [selectedSort, setSelectedSort]     = useState('createdAt,desc')
-  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED'>('ALL')
+  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED'>('ALL')
 
   // 인기 검색어 상태
   const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([])
@@ -261,19 +272,29 @@ function HomePage() {
 
         let content = res.content ?? []
 
-        // ENDED / CANCELLED 이벤트는 항상 제외 (status 필드 기준)
-        content = content.filter((e) =>
-          e.status !== 'ENDED' &&
-          e.status !== 'CANCELLED'
-        )
+        // 전체 탭: ENDED / CANCELLED 항상 제외
+        if (selectedStatus === 'ALL') {
+          content = content.filter((e) =>
+            e.status !== 'ENDED' && e.status !== 'CANCELLED'
+          )
+        }
 
-        // 예매중 탭: 매진(remainingSeats=0 또는 status=SOLD_OUT) 제외
+        // 예매중 탭: 매진 제외
         if (selectedStatus === 'ON_SALE') {
           content = content.filter((e) => e.remainingSeats > 0 && e.status !== 'SOLD_OUT')
         }
 
         setEvents(content)
-        setTotalPages(res.totalPages ?? 0)
+        // 클라이언트 필터링 후 실제 표시 개수 기준으로 totalPages 재계산
+        const serverTotalPages = res.totalPages ?? 0
+        if (content.length === 0) {
+          setTotalPages(0)
+        } else if (selectedStatus !== 'ALL' && content.length < 9) {
+          // 클라이언트 필터링으로 줄어든 경우 마지막 페이지로 처리
+          setTotalPages(currentPage + 1)
+        } else {
+          setTotalPages(serverTotalPages)
+        }
       } catch {
         setEvents([])
       } finally {
@@ -309,7 +330,7 @@ function HomePage() {
     setCurrentPage(0)
   }
 
-  const handleStatusChange = (status: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED') => {
+  const handleStatusChange = (status: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED') => {
     setSelectedStatus(status)
     setCurrentPage(0)
   }
@@ -346,9 +367,9 @@ function HomePage() {
         {/* 왼쪽: 이벤트 목록 */}
         <div className="flex-1 min-w-0">
 
-          {/* 상태 탭 — 예매중 / 매진 */}
+          {/* 상태 탭 — 예매중 / 매진 / (관리자) 종료됨 */}
           <div className="mb-3 flex gap-1 border-b border-gray-200" role="tablist" aria-label="예매 상태 필터">
-            {STATUS_TABS.map((tab) => (
+            {(isAdmin ? ADMIN_STATUS_TABS : STATUS_TABS).map((tab) => (
               <button
                 key={tab.value}
                 role="tab"

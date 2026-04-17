@@ -85,33 +85,12 @@ function OrderCard({
         <StatusBadge status={order.status} />
       </div>
 
-      {/* 이벤트 정보 — 상세 조회 결과 */}
-      {detail?.event && (
+      {/* 이벤트 타이틀 — bookings[0].eventTitle에서 추출 */}
+      {(detail?.bookings?.[0]?.eventTitle ?? detail?.eventTitle) && (
         <div>
           <h3 className="text-base font-bold text-gray-900 leading-snug">
-            {(detail.event as { title?: string }).title ?? '공연 정보'}
+            {detail?.bookings?.[0]?.eventTitle ?? detail?.eventTitle}
           </h3>
-          <div className="mt-1 space-y-0.5 text-sm text-gray-500">
-            {(detail.event as { eventDate?: string }).eventDate && (
-              <p>📅 {formatDate((detail.event as { eventDate: string }).eventDate)}</p>
-            )}
-            {(detail.event as { venueName?: string }).venueName && (
-              <p>📍 {(detail.event as { venueName: string }).venueName}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 공연 정보 — OrderSummary에 있을 경우 */}
-      {!detail?.event && order.eventTitle && (
-        <div>
-          <h3 className="text-base font-bold text-gray-900 leading-snug">
-            {order.eventTitle}
-          </h3>
-          <div className="mt-1 space-y-0.5 text-sm text-gray-500">
-            {order.eventDate && <p>📅 {formatDate(order.eventDate)}</p>}
-            {order.venueName && <p>📍 {order.venueName}</p>}
-          </div>
         </div>
       )}
 
