@@ -39,18 +39,19 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
  * 이벤트 상태 계산
  * - 백엔드 status 필드 우선
  * - 없으면 remainingSeats == 0 → SOLD_OUT, eventDate 지남 → ENDED
+ * - 백엔드 status 필드 우선
+ * - 없으면 remainingSeats == 0 → SOLD_OUT, eventDate 지남 → ENDED
  */
-<<<<<<< HEAD
 function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED' | 'CANCELLED' {
   if (event.status) return event.status
 
   const totalRemaining = (event.sections ?? []).reduce((sum, s) => sum + (s.remainingSeats ?? 0), 0)
-=======
-function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED' {
-  if (!event.sections || event.sections.length === 0) return 'ON_SALE'
-  const totalRemaining = event.sections.reduce((sum, s) => sum + (s.remainingSeats ?? 0), 0)
->>>>>>> dev
   if (totalRemaining === 0) return 'SOLD_OUT'
+
+  const endTime = event.saleEndAt
+    ? new Date(event.saleEndAt).getTime()
+    : new Date(event.eventDate).getTime()
+  if (endTime < Date.now()) return 'ENDED'
 
   const endTime = event.saleEndAt
     ? new Date(event.saleEndAt).getTime()
