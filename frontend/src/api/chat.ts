@@ -47,8 +47,8 @@ export const getChatMessages = async (
 // 채팅방 종료
 export const closeChatRoom = async (
   chatRoomId: number
-): Promise<{ message: string; chatRoomId: number; closedAt: string }> => {
-  const response = await apiClient.patch<ApiWrapper<{ message: string; chatRoomId: number; closedAt: string }>>(
+): Promise<{ message: string; chatRoomId: number; chatRoom: ChatRoom; closedAt: string }> => {
+  const response = await apiClient.patch<ApiWrapper<{ message: string; chatRoomId: number; chatRoom: ChatRoom; closedAt: string }>>(
     `/chat/rooms/${chatRoomId}/close`
   )
   return unwrap(response)
@@ -59,6 +59,18 @@ export const getAdminChatRooms = async (
   params: AdminChatRoomParams
 ): Promise<PageResponse<AdminChatRoom>> => {
   const response = await apiClient.get<ApiWrapper<PageResponse<AdminChatRoom>>>('/admin/chat/rooms', { params })
+  return unwrap(response)
+}
+
+// 채팅방 상태 변경 (관리자)
+export const updateChatRoomStatus = async (
+  chatRoomId: number,
+  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED',
+): Promise<ChatRoom> => {
+  const response = await apiClient.patch<ApiWrapper<ChatRoom>>(
+    `/admin/chat/rooms/${chatRoomId}/status`,
+    { status }
+  )
   return unwrap(response)
 }
 

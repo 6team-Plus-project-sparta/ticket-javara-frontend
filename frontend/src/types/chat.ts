@@ -3,7 +3,7 @@ import { PageResponse } from './common'
 
 export interface ChatRoom {
   chatRoomId: number
-  status: 'OPEN' | 'CLOSED'
+  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
   createdAt: string
   isNew: boolean
 }
@@ -33,13 +33,13 @@ export interface AdminChatRoom {
   chatRoomId: number
   userId: number
   userNickname: string
-  status: 'OPEN' | 'CLOSED'
+  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
   lastMessage: string
   createdAt: string
 }
 
 export interface AdminChatRoomParams {
-  status?: 'OPEN' | 'CLOSED'
+  status?: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
   page?: number
   size?: number
 }

@@ -245,7 +245,7 @@ function ChatPage() {
   // ── 메시지 전송 ──────────────────────────────────────────────
   const handleSend = async () => {
     const content = inputText.trim()
-    if (!content || !room || room.status === 'CLOSED') return
+    if (!content || !room || room.status === 'COMPLETED') return
     setSending(true)
     try {
       stompSend(content)
@@ -269,7 +269,7 @@ function ChatPage() {
     setClosing(true)
     try {
       await closeChatRoom(room.chatRoomId)
-      setRoom((prev) => prev ? { ...prev, status: 'CLOSED' } : prev)
+      setRoom((prev) => prev ? { ...prev, status: 'COMPLETED' } : prev)
       setCloseModalOpen(false)
       toast.success('문의가 종료되었습니다.')
     } catch {
@@ -301,7 +301,7 @@ function ChatPage() {
     return items
   }
 
-  const isClosed   = room?.status === 'CLOSED'
+  const isClosed   = room?.status === 'COMPLETED'
   const canSend    = connectionStatus === 'connected' && !isClosed && inputText.trim().length > 0
 
   // ── 렌더링 ───────────────────────────────────────────────────
