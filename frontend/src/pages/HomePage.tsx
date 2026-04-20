@@ -35,7 +35,22 @@ const CATEGORIES: { label: string; value: EventCategory | 'ALL' }[] = [
   { label: '기타',     value: 'ETC' },
 ]
 
+const STATUS_TABS: { label: string; value: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED' }[] = [
+  { label: '전체',   value: 'ALL' },
+  { label: '예매중', value: 'ON_SALE' },
+  { label: '매진',   value: 'SOLD_OUT' },
+]
+
+/** 관리자 전용 탭 포함 */
+const ADMIN_STATUS_TABS: { label: string; value: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED' }[] = [
+  { label: '전체',   value: 'ALL' },
+  { label: '예매중', value: 'ON_SALE' },
+  { label: '매진',   value: 'SOLD_OUT' },
+  { label: '종료됨', value: 'ENDED' },
+]
+
 const SORT_OPTIONS = [
+  { label: '최신 등록순',     value: 'createdAt,desc' },
   { label: '공연일 빠른 순', value: 'eventDate,asc' },
   { label: '공연일 늦은 순', value: 'eventDate,desc' },
   { label: '낮은 가격 순',   value: 'minPrice,asc' },
@@ -136,17 +151,22 @@ function PopularKeywordsCard({
 }
 
 /** 이벤트 카드 */
-function EventCard({ event, onClick }: { event: EventSummary; onClick: () => void }) {
-  const isSoldOut = event.remainingSeats === 0
+function EventCard({ event, onClick, disabled = false }: { event: EventSummary; onClick: () => void; disabled?: boolean }) {
+  const resolvedStatus = event.status ?? (event.remainingSeats === 0 ? 'SOLD_OUT' : 'ON_SALE')
+  const isSoldOut = resolvedStatus === 'SOLD_OUT'
+  const isEnded   = resolvedStatus === 'ENDED' || resolvedStatus === 'CANCELLED'
+  // 매진 또는 종료됨이면 클릭 불가
+  const isDisabled = disabled || isSoldOut || isEnded
 
   return (
     <article
-      onClick={onClick}
+      onClick={isDisabled ? undefined : onClick}
       role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onClick()}
+      tabIndex={isDisabled ? -1 : 0}
+      onKeyDown={(e) => !isDisabled && e.key === 'Enter' && onClick()}
       aria-label={`${event.title} 상세 보기`}
-      className="group cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md"
+      aria-disabled={isDisabled}
+      className={['group overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-shadow', isDisabled ? 'cursor-default opacity-75' : 'cursor-pointer hover:shadow-md'].join(' ')}
     >
       {/* 썸네일 */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
@@ -164,28 +184,37 @@ function EventCard({ event, onClick }: { event: EventSummary; onClick: () => voi
             </svg>
           </div>
         )}
-        {/* 매진 오버레이 */}
-        {isSoldOut && (
+        {/* 매진/종료 오버레이 */}
+        {(isSoldOut || isEnded) && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700">매진</span>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700">
+              {isSoldOut ? '매진' : '종료됨'}
+            </span>
           </div>
         )}
-        {/* 카테고리 뱃지 */}
+        {/* 상태 배지 */}
         <div className="absolute left-2 top-2">
-          <StatusBadge status={isSoldOut ? 'SOLD_OUT' : 'ON_SALE'} />
+          <StatusBadge status={resolvedStatus} />
         </div>
       </div>
 
       {/* 카드 본문 */}
       <div className="p-4">
         <p className="mb-1 text-xs text-gray-400">{event.venueName}</p>
-        <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+        <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
           {event.title}
         </h3>
         <p className="mb-3 text-xs text-gray-500">{formatEventDate(event.eventDate)}</p>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-blue-600">{formatPrice(event.minPrice)}</span>
-          <span className="text-xs text-gray-400">잔여 {event.remainingSeats.toLocaleString()}석</span>
+          <span className="text-sm font-bold text-primary-600">{formatPrice(event.minPrice)}</span>
+          {/* 상태에 따라 잔여석 또는 예매종료 표시 */}
+          {isSoldOut ? (
+            <span className="text-xs font-semibold text-red-500">매진</span>
+          ) : isEnded ? (
+            <span className="text-xs font-semibold text-gray-400">예매종료</span>
+          ) : (
+            <span className="text-xs text-gray-400">잔여 {event.remainingSeats.toLocaleString()}석</span>
+          )}
         </div>
       </div>
     </article>
@@ -197,7 +226,8 @@ function EventCard({ event, onClick }: { event: EventSummary; onClick: () => voi
 function HomePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, user } = useAuth()
+  const isAdmin = user?.role === 'ADMIN'
 
   // 이벤트 목록 상태
   const [events, setEvents] = useState<EventSummary[]>([])
@@ -209,7 +239,8 @@ function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'ALL'>(
     () => (searchParams.get('category') as EventCategory) || 'ALL'
   )
-  const [selectedSort, setSelectedSort] = useState('eventDate,asc')
+  const [selectedSort, setSelectedSort]     = useState('createdAt,desc')
+  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED'>('ALL')
 
   // 인기 검색어 상태
   const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([])
@@ -236,9 +267,34 @@ function HomePage() {
           size: 9,
           sort: selectedSort,
           ...(selectedCategory !== 'ALL' && { category: selectedCategory }),
+          ...(selectedStatus !== 'ALL' && { status: selectedStatus }),
         })
-        setEvents(res.content ?? [])
-        setTotalPages(res.totalPages ?? 0)
+
+        let content = res.content ?? []
+
+        // 전체 탭: ENDED / CANCELLED 항상 제외
+        if (selectedStatus === 'ALL') {
+          content = content.filter((e) =>
+            e.status !== 'ENDED' && e.status !== 'CANCELLED'
+          )
+        }
+
+        // 예매중 탭: 매진 제외
+        if (selectedStatus === 'ON_SALE') {
+          content = content.filter((e) => e.remainingSeats > 0 && e.status !== 'SOLD_OUT')
+        }
+
+        setEvents(content)
+        // 클라이언트 필터링 후 실제 표시 개수 기준으로 totalPages 재계산
+        const serverTotalPages = res.totalPages ?? 0
+        if (content.length === 0) {
+          setTotalPages(0)
+        } else if (selectedStatus !== 'ALL' && content.length < 9) {
+          // 클라이언트 필터링으로 줄어든 경우 마지막 페이지로 처리
+          setTotalPages(currentPage + 1)
+        } else {
+          setTotalPages(serverTotalPages)
+        }
       } catch {
         setEvents([])
       } finally {
@@ -246,7 +302,7 @@ function HomePage() {
       }
     }
     fetchEvents()
-  }, [currentPage, selectedCategory, selectedSort])
+  }, [currentPage, selectedCategory, selectedSort, selectedStatus])
 
   // 인기 검색어 조회 (최초 1회)
   useEffect(() => {
@@ -263,7 +319,7 @@ function HomePage() {
     fetchKeywords()
   }, [])
 
-  // 카테고리/정렬 변경 시 페이지 초기화
+  // 카테고리/정렬/상태 변경 시 페이지 초기화
   const handleCategoryChange = (category: EventCategory | 'ALL') => {
     setSelectedCategory(category)
     setCurrentPage(0)
@@ -271,6 +327,11 @@ function HomePage() {
 
   const handleSortChange = (sort: string) => {
     setSelectedSort(sort)
+    setCurrentPage(0)
+  }
+
+  const handleStatusChange = (status: 'ALL' | 'ON_SALE' | 'SOLD_OUT' | 'ENDED') => {
+    setSelectedStatus(status)
     setCurrentPage(0)
   }
 
@@ -305,6 +366,26 @@ function HomePage() {
 
         {/* 왼쪽: 이벤트 목록 */}
         <div className="flex-1 min-w-0">
+
+          {/* 상태 탭 — 예매중 / 매진 / (관리자) 종료됨 */}
+          <div className="mb-3 flex gap-1 border-b border-gray-200" role="tablist" aria-label="예매 상태 필터">
+            {(isAdmin ? ADMIN_STATUS_TABS : STATUS_TABS).map((tab) => (
+              <button
+                key={tab.value}
+                role="tab"
+                aria-selected={selectedStatus === tab.value}
+                onClick={() => handleStatusChange(tab.value)}
+                className={[
+                  'px-4 py-2 text-sm font-semibold border-b-2 transition-colors',
+                  selectedStatus === tab.value
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-400 hover:text-gray-600',
+                ].join(' ')}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {/* 카테고리 필터 */}
           <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="카테고리 필터">

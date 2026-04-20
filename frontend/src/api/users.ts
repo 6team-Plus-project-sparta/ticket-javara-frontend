@@ -26,7 +26,19 @@ export const updateMe = async (data: UpdateMeRequest): Promise<{ message: string
 // 내 예매 내역 조회
 export const getMyBookings = async (params: BookingListParams): Promise<PageResponse<OrderSummary>> => {
   const response = await apiClient.get<ApiWrapper<PageResponse<OrderSummary>>>('/users/me/bookings', { params })
-  return (response.data as ApiWrapper<PageResponse<OrderSummary>>).data ?? response.data as unknown as PageResponse<OrderSummary>
+  console.log('[getMyBookings] raw:', response.data)
+  const result = (response.data as ApiWrapper<PageResponse<OrderSummary>>).data ?? response.data as unknown as PageResponse<OrderSummary>
+  console.log('[getMyBookings] unwrapped:', result)
+
+  // { content, page: { totalPages, ... } } 구조 대응
+  const data = result as PageResponse<OrderSummary> & { page?: { totalPages?: number; totalElements?: number; size?: number; number?: number } }
+  if (data.page && data.totalPages === undefined) {
+    data.totalPages    = data.page.totalPages ?? 0
+    data.totalElements = data.page.totalElements ?? 0
+    data.size          = data.page.size ?? 5
+  }
+
+  return data
 }
 
 // 내 쿠폰 목록 조회
