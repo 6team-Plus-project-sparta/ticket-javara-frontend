@@ -209,7 +209,7 @@ function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'ALL'>(
     () => (searchParams.get('category') as EventCategory) || 'ALL'
   )
-  const [selectedSort, setSelectedSort] = useState('eventDate,desc')
+  const [selectedSort, setSelectedSort] = useState('eventDate,asc')
 
   // 인기 검색어 상태
   const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([])
@@ -238,7 +238,7 @@ function HomePage() {
           ...(selectedCategory !== 'ALL' && { category: selectedCategory }),
         })
         setEvents(res.content ?? [])
-        setTotalPages(res.page?.totalPages ?? res.totalPages ?? 0)
+        setTotalPages(res.totalPages ?? 0)
       } catch {
         setEvents([])
       } finally {
