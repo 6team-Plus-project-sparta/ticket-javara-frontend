@@ -55,7 +55,7 @@ export const confirmTossPayment = async (
 ): Promise<ConfirmTossPaymentResponse> => {
   const response = await apiClient.post<ConfirmTossPaymentResponse>(
       `/orders/${data.orderId}/confirm-payment`,
-      { paymentKey: data.paymentKey, amount: data.amount }
+      { paymentKey: data.paymentKey, amount: data.amount, tossOrderId: data.tossOrderId }
   )
   return response.data
 }

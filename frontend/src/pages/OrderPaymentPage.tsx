@@ -74,7 +74,7 @@ interface PaymentLocationState {
 
 // ─── 유틸 ────────────────────────────────────────────────────
 
-export function calcPaymentAmount(
+function calcPaymentAmount(
     seats: { price: number }[],
     coupon: UserCoupon | null,
 ): { totalAmount: number; discountAmount: number; finalAmount: number } {
@@ -245,7 +245,7 @@ function OrderPaymentPage() {
       // 1. 백엔드에 주문 생성 → orderId 확보
       const order = await createOrder({
         holdTokens,
-        ...(selectedCoupon && { couponId: selectedCoupon.userCouponId }),
+        ...(selectedCoupon && { userCouponId: selectedCoupon.userCouponId }),
       })
 
       // 2. 토스 SDK 스크립트 동적 로드
@@ -260,11 +260,13 @@ function OrderPaymentPage() {
       // 4. 결제창 호출
       //    성공 → successUrl로 리다이렉트 (paymentKey, orderId, amount 쿼리파라미터 포함)
       //    실패 → failUrl로 리다이렉트 (failed=true 쿼리파라미터 포함)
+      const tossOrderIdValue = `ORDER-${order.orderId}-${Date.now()}`
+
       await tossPayments.requestPayment('카드', {
         amount:     finalAmount,
-        orderId:    String(order.orderId),
+        orderId:    tossOrderIdValue,
         orderName:  `${eventTitle} 티켓 ${selectedSeats.length}매`,
-        successUrl: `${window.location.origin}/orders/${order.orderId}/complete`,
+        successUrl: `${window.location.origin}/orders/${order.orderId}/complete?tossOrderId=${tossOrderIdValue}`,
         failUrl:    `${window.location.origin}/orders/${order.orderId}/complete?failed=true`,
       })
 

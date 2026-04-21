@@ -2,7 +2,7 @@
 
 export interface CreateOrderRequest {
   holdTokens: string[]
-  couponId?: number
+  userCouponId?: number   // couponId → userCouponId 로 변경
 }
 
 export interface OrderItem {
@@ -71,6 +71,7 @@ export interface ConfirmTossPaymentRequest {
   paymentKey: string
   orderId: number
   amount: number
+  tossOrderId: string
 }
 
 /** 토스페이먼츠 결제 승인 응답 */
