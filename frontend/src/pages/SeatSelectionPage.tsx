@@ -133,7 +133,7 @@ const SeatButton = ({
       aria-pressed={isMyHold}
       title={seat.seatNumber}
       className={[
-        'relative flex h-6 w-6 items-center justify-center rounded-t-lg rounded-b-sm border text-[9px] font-medium',
+        'relative flex h-7 w-7 min-h-[28px] min-w-[28px] items-center justify-center rounded-t-lg rounded-b-sm border text-[9px] font-medium',
         'transition-colors focus:outline-none focus:ring-1 focus:ring-primary-400 focus:ring-offset-1',
         colorClass,
         isLoading ? 'opacity-50' : '',
@@ -145,7 +145,7 @@ const SeatButton = ({
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
         </svg>
       ) : (
-        seat.col
+        seat.colNum ?? seat.col
       )}
     </button>
   )
@@ -167,9 +167,10 @@ function SeatGrid({
   const rows = useMemo(() => {
     const map = new Map<string, Seat[]>()
     for (const seat of seats) {
-      const list = map.get(seat.row) ?? []
+      const rowKey = seat.rowName ?? seat.row ?? '?'
+      const list = map.get(rowKey) ?? []
       list.push(seat)
-      map.set(seat.row, list)
+      map.set(rowKey, list)
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
   }, [seats])
@@ -214,20 +215,24 @@ function SeatGrid({
       </div>
 
       {/* ── 좌석 행 ── */}
-      <div className="flex flex-col items-center gap-1.5">
+      <div className="flex flex-col items-center gap-0">
         {rows.map(([rowLabel, rowSeats], rowIdx) => {
-          const sorted = [...rowSeats].sort((a, b) => a.col - b.col)
-          // 앞 행일수록 살짝 좁게 — 부채꼴 느낌
-          const scale = 1 - (rows.length - 1 - rowIdx) * 0.008
+          const sorted = [...rowSeats].sort((a, b) => (a.colNum ?? a.col ?? 0) - (b.colNum ?? b.col ?? 0))
+          const isEvenRow = rowIdx % 2 === 0
 
           return (
             <div
               key={rowLabel}
-              className="flex items-center gap-1"
-              style={{ transform: `scaleX(${scale})` }}
+              className={[
+                'flex items-center gap-1.5 py-1 px-2 rounded-sm w-full justify-center',
+                isEvenRow ? 'bg-gray-200/50' : 'bg-transparent',
+              ].join(' ')}
             >
-              {/* 행 라벨 */}
-              <span className="w-5 shrink-0 text-center text-xs font-semibold text-gray-400 select-none">
+              {/* 행 라벨 — 왼쪽 */}
+              <span className={[
+                'w-6 shrink-0 text-center text-xs font-bold select-none rounded',
+                isEvenRow ? 'text-gray-600 bg-gray-300/50' : 'text-gray-400',
+              ].join(' ')}>
                 {rowLabel}
               </span>
 
@@ -244,8 +249,11 @@ function SeatGrid({
                 ))}
               </div>
 
-              {/* 오른쪽 행 라벨 */}
-              <span className="w-5 shrink-0 text-center text-xs font-semibold text-gray-400 select-none">
+              {/* 행 라벨 — 오른쪽 */}
+              <span className={[
+                'w-6 shrink-0 text-center text-xs font-bold select-none rounded',
+                isEvenRow ? 'text-gray-600 bg-gray-300/50' : 'text-gray-400',
+              ].join(' ')}>
                 {rowLabel}
               </span>
             </div>
