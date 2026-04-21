@@ -42,18 +42,20 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
  * - 백엔드 status 필드 우선
  * - 없으면 remainingSeats == 0 → SOLD_OUT, eventDate 지남 → ENDED
  */
-function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED' | 'CANCELLED' {
-  if (event.status) return event.status
+function resolveEventStatus(event: EventDetail): 'ON_SALE' | 'SOLD_OUT' | 'ENDED' {
+    const now = Date.now()
 
-  const totalRemaining = (event.sections ?? []).reduce((sum, s) => sum + (s.remainingSeats ?? 0), 0)
-  if (totalRemaining === 0) return 'SOLD_OUT'
+    // 공연 자체가 지난 경우
+    if (new Date(event.eventDate).getTime() < now) return 'ENDED'
 
-  const endTime = event.saleEndAt
-    ? new Date(event.saleEndAt).getTime()
-    : new Date(event.eventDate).getTime()
-  if (endTime < Date.now()) return 'ENDED'
+    // 예매 마감일이 지난 경우
+    if (event.saleEndAt && new Date(event.saleEndAt).getTime() < now) return 'ENDED'
 
-  return 'ON_SALE'
+    // 잔여석 없으면 매진
+    const totalRemaining = event.sections.reduce((sum, s) => sum + s.remainingSeats, 0)
+    if (totalRemaining === 0) return 'SOLD_OUT'
+
+    return 'ON_SALE'
 }
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────
