@@ -15,6 +15,7 @@ import { getEvents } from '@/api/events'
 import { getPopularKeywords, clickPopularKeyword } from '@/api/search'
 import type { EventSummary, EventCategory, EventStatus } from '@/types/event'
 import type { PopularKeyword } from '@/types/search'
+import CarouselBanner from '@/components/CarouselBanner'
 import {
     SearchBar,
     LoadingSpinner,
@@ -81,36 +82,6 @@ function resolveCardStatus(event: EventSummary): EventStatus {
 }
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────
-
-function HeroBanner({ onBookingClick }: { onBookingClick: () => void }) {
-    return (
-        <section
-            aria-label="히어로 배너"
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 px-8 py-14 text-white shadow-lg"
-        >
-            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10" aria-hidden="true" />
-            <div className="absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-white/5" aria-hidden="true" />
-            <div className="relative z-10 max-w-xl">
-                <p className="mb-2 text-sm font-medium text-blue-200 uppercase tracking-widest">지금 바로 예매하세요</p>
-                <h1 className="mb-3 text-3xl font-extrabold leading-tight md:text-4xl">
-                    설레는 순간을<br />티켓을 JAVA라와 함께
-                </h1>
-                <p className="mb-6 text-blue-100 text-sm md:text-base">
-                    콘서트, 뮤지컬, 스포츠까지 — 모든 공연 티켓을 한 곳에서
-                </p>
-                <button
-                    onClick={onBookingClick}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-blue-700 shadow hover:bg-blue-50 transition-colors"
-                >
-                    지금 예매하기
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </div>
-        </section>
-    )
-}
 
 function PopularKeywordsCard({
                                  keywords,
@@ -230,9 +201,10 @@ function HomePage() {
     const { isLoggedIn, user } = useAuth()
     const isAdmin = user?.role === 'ADMIN'
 
-    const [events, setEvents]           = useState<EventSummary[]>([])
-    const [totalPages, setTotalPages]   = useState(0)
-    const [currentPage, setCurrentPage] = useState(0)
+    const [events, setEvents]             = useState<EventSummary[]>([])
+    const [totalPages, setTotalPages]     = useState(0)
+    const [totalElements, setTotalElements] = useState(0)
+    const [currentPage, setCurrentPage]   = useState(0)
     const [eventsLoading, setEventsLoading] = useState(true)
 
     const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'ALL'>(
@@ -251,6 +223,15 @@ function HomePage() {
             setCurrentPage(0)
             return cat
         })
+
+        const statusParam = searchParams.get('status') as EventStatus | null
+        if (statusParam) {
+            setSelectedStatus((prev) => {
+                if (prev === statusParam) return prev
+                setCurrentPage(0)
+                return statusParam
+            })
+        }
     }, [searchParams])
 
     useEffect(() => {
@@ -280,8 +261,10 @@ function HomePage() {
 
                 setEvents(content)
                 setTotalPages(res.totalPages ?? 0)
+                setTotalElements(res.totalElements ?? 0)
             } catch {
                 setEvents([])
+                setTotalElements(0)
             } finally {
                 setEventsLoading(false)
             }
@@ -322,7 +305,7 @@ function HomePage() {
     return (
         <div className="space-y-8">
 
-            <HeroBanner onBookingClick={() => navigate('/events/1')} />
+            <CarouselBanner onBookingClick={() => navigate('/?status=ON_SALE')} />
 
             <div className="md:hidden">
                 <SearchBar onSearch={handleSearch} />
@@ -373,7 +356,7 @@ function HomePage() {
                     {/* 정렬 + 결과 수 */}
                     <div className="mb-4 flex items-center justify-between">
                         <p className="text-sm text-gray-500">
-                            {eventsLoading ? '조회 중...' : `총 ${events.length}개`}
+                            {eventsLoading ? '조회 중...' : `총 ${totalElements}개`}
                         </p>
                         <select
                             value={selectedSort}
