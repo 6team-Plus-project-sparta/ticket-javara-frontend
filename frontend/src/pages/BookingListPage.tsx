@@ -216,11 +216,18 @@ function BookingListPage() {
     if (!cancelTarget) return
     setCancelLoading(true)
     try {
-      const res = await cancelOrder(cancelTarget.orderId)
-      toast.success(`취소가 완료되었습니다. 환불 금액: ${formatPrice(res.refundAmount)}`)
+      await cancelOrder(cancelTarget.orderId)
+      toast.success('취소가 완료되었습니다. 환불은 영업일 기준 3~5일 소요됩니다.')
       setCancelTarget(null)
-      // 목록 재조회
-      await fetchBookings()
+
+      // 로컬 상태 즉시 업데이트 — 서버 재조회 없이 UI 반영
+      setOrders(prev =>
+          prev.map(o =>
+              o.orderId === cancelTarget.orderId
+                  ? { ...o, status: 'CANCELLED' as const }
+                  : o
+          )
+      )
     } catch (error) {
       toast.error(getCancelErrorMessage(error))
     } finally {

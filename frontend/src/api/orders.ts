@@ -36,9 +36,8 @@ export const getOrder = async (orderId: number): Promise<OrderDetail> => {
 }
 
 // 주문 취소
-export const cancelOrder = async (orderId: number): Promise<CancelOrderResponse> => {
-  const response = await apiClient.post<ApiWrapper<CancelOrderResponse>>(`/orders/${orderId}/cancel`)
-  return unwrap(response.data)
+export const cancelOrder = async (orderId: number): Promise<void> => {
+  await apiClient.post(`/orders/${orderId}/cancel`)
 }
 
 /**
