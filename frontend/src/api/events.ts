@@ -46,8 +46,14 @@ export const getEventDetail = async (eventId: number): Promise<EventDetail> => {
 }
 
 // 이벤트 검색 v1 (캐시 없음 — 성능 기준선)
-export const searchEventsV1 = async (params: EventSearchParams): Promise<PageResponse<EventSummary>> => {
-  const response = await apiClient.get<ApiWrapper<PageResponse<EventSummary>>>('/v1/events/search', { params })
+export const searchEventsV1 = async (
+  params: EventSearchParams,
+  options?: { signal?: AbortSignal },
+): Promise<PageResponse<EventSummary>> => {
+  const response = await apiClient.get<ApiWrapper<PageResponse<EventSummary>>>('/v1/events/search', {
+    params,
+    signal: options?.signal,
+  })
   return unwrap(response.data)
 }
 
@@ -58,8 +64,14 @@ export interface SearchV2Result {
 }
 
 // 이벤트 검색 v2 (Caffeine → Redis Cache-Aside, X-Cache 헤더 포함)
-export const searchEventsV2 = async (params: EventSearchParams): Promise<SearchV2Result> => {
-  const response = await apiClient.get<ApiWrapper<PageResponse<EventSummary>>>('/v2/events/search', { params })
+export const searchEventsV2 = async (
+  params: EventSearchParams,
+  options?: { signal?: AbortSignal },
+): Promise<SearchV2Result> => {
+  const response = await apiClient.get<ApiWrapper<PageResponse<EventSummary>>>('/v2/events/search', {
+    params,
+    signal: options?.signal,
+  })
   const cacheHeader = response.headers['x-cache'] as string | undefined
   const cacheStatus = cacheHeader === 'HIT' ? 'HIT' : cacheHeader === 'MISS' ? 'MISS' : null
   return { data: unwrap(response.data), cacheStatus }
