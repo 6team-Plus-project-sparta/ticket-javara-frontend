@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { getAdminChatRooms, getChatMessages, closeChatRoom } from '@/api/chat'
+import { getAdminChatRooms, getChatMessages, updateChatRoomStatus } from '@/api/chat'
 import type { AdminChatRoom, ChatMessage } from '@/types/chat'
 import { Button, LoadingSpinner } from '@/components'
 import { useToast } from '@/components/Toast'
@@ -14,7 +14,7 @@ import { useStompChat } from '@/hooks/useStompChat'
 
 // ─── 탭 ──────────────────────────────────────────────────────
 
-type RoomFilter = 'ALL' | 'OPEN' | 'CLOSED'
+type RoomFilter = 'ALL' | 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
 
 // ─── 유틸 ────────────────────────────────────────────────────
 
@@ -106,12 +106,10 @@ function AdminChatPage() {
   const fetchAllRooms = async () => {
     setRoomsLoading(true)
     try {
-      // 전체 조회 (OPEN + CLOSED 합산)
-      const [openRes, closedRes] = await Promise.all([
-        getAdminChatRooms({ status: 'OPEN',   page: 0, size: 100 }),
-        getAdminChatRooms({ status: 'CLOSED', page: 0, size: 100 }),
-      ])
-      setAllRooms([...(openRes.content ?? []), ...(closedRes.content ?? [])])
+      // 백엔드는 status enum이 WAITING/IN_PROGRESS/COMPLETED 이므로
+      // status 파라미터 없이 전체 조회 후 프론트에서 OPEN/CLOSED 탭을 필터링한다.
+      const res = await getAdminChatRooms({ page: 0, size: 200 })
+      setAllRooms([...(res.content ?? [])])
     } catch {
       toast.error('채팅방 목록을 불러오지 못했습니다.')
     } finally {
@@ -130,8 +128,9 @@ function AdminChatPage() {
 
   // ── 통계 ─────────────────────────────────────────────────────
   const totalCount  = allRooms.length
-  const openCount   = allRooms.filter((r) => r.status === 'OPEN').length
-  const closedCount = allRooms.filter((r) => r.status === 'CLOSED').length
+  const waitingCount   = allRooms.filter((r) => r.status === 'WAITING').length
+  const progressCount  = allRooms.filter((r) => r.status === 'IN_PROGRESS').length
+  const completedCount = allRooms.filter((r) => r.status === 'COMPLETED').length
 
   // ── 채팅방 선택 → 메시지 조회 ────────────────────────────────
   useEffect(() => {
@@ -147,8 +146,11 @@ function AdminChatPage() {
   }, [selectedRoomId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── WebSocket ─────────────────────────────────────────────────
+  const selectedRoom = allRooms.find((r) => r.chatRoomId === selectedRoomId)
+  const shouldConnect = selectedRoomId && selectedRoom?.status !== 'COMPLETED'
+  
   const { connectionStatus, sendMessage } = useStompChat({
-    chatRoomId: selectedRoomId,
+    chatRoomId: shouldConnect ? selectedRoomId : null, // 종료된 채팅방은 연결하지 않음
     onMessage: (msg) => {
       setMessages((prev) => [...prev, msg])
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
@@ -169,7 +171,7 @@ function AdminChatPage() {
     if (!selectedRoomId) return
     setClosing(true)
     try {
-      await closeChatRoom(selectedRoomId)
+      await updateChatRoomStatus(selectedRoomId, 'COMPLETED')
       toast.success('채팅방이 종료되었습니다.')
       await fetchAllRooms()
       setSelectedRoomId(null)
@@ -180,8 +182,6 @@ function AdminChatPage() {
       setClosing(false)
     }
   }
-
-  const selectedRoom = allRooms.find((r) => r.chatRoomId === selectedRoomId)
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden">
@@ -202,20 +202,28 @@ function AdminChatPage() {
             onClick={() => setActiveTab('ALL')}
           />
           <StatCard
+            label="대기중"
+            count={waitingCount}
+            icon={<IconWaiting />}
+            color="text-orange-500"
+            active={activeTab === 'WAITING'}
+            onClick={() => setActiveTab('WAITING')}
+          />
+          <StatCard
             label="진행중"
-            count={openCount}
+            count={progressCount}
             icon={<IconActive />}
             color="text-green-500"
-            active={activeTab === 'OPEN'}
-            onClick={() => setActiveTab('OPEN')}
+            active={activeTab === 'IN_PROGRESS'}
+            onClick={() => setActiveTab('IN_PROGRESS')}
           />
           <StatCard
             label="종료"
-            count={closedCount}
+            count={completedCount}
             icon={<IconDone />}
             color="text-gray-400"
-            active={activeTab === 'CLOSED'}
-            onClick={() => setActiveTab('CLOSED')}
+            active={activeTab === 'COMPLETED'}
+            onClick={() => setActiveTab('COMPLETED')}
           />
         </div>
       </div>
@@ -227,7 +235,10 @@ function AdminChatPage() {
         <aside className="flex w-72 shrink-0 flex-col border-r border-gray-100">
           <div className="border-b border-gray-100 px-4 py-3">
             <p className="text-xs font-semibold text-gray-500">
-              {activeTab === 'ALL' ? '전체' : activeTab === 'OPEN' ? '진행중' : '종료'} {filteredRooms.length}건
+              {activeTab === 'ALL' ? '전체'
+                : activeTab === 'WAITING' ? '대기중'
+                : activeTab === 'IN_PROGRESS' ? '진행중'
+                : '종료'} {filteredRooms.length}건
             </p>
           </div>
 
@@ -252,7 +263,9 @@ function AdminChatPage() {
                           {/* 상태 점 */}
                           <span className={[
                             'h-2 w-2 rounded-full shrink-0',
-                            room.status === 'OPEN' ? 'bg-green-500' : 'bg-gray-300',
+                            room.status === 'WAITING' ? 'bg-orange-500'
+                              : room.status === 'IN_PROGRESS' ? 'bg-green-500'
+                              : 'bg-gray-300',
                           ].join(' ')} />
                           <span className="text-sm font-semibold text-gray-800 truncate max-w-[110px]">
                             {room.userNickname}
@@ -303,17 +316,42 @@ function AdminChatPage() {
                     </div>
                   </div>
                 </div>
-                {selectedRoom?.status === 'OPEN' ? (
-                  <Button variant="danger" size="small" loading={closing} onClick={handleClose}>
-                    문의 종료
-                  </Button>
-                ) : (
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-400">종료된 문의</span>
-                )}
+                <div className="flex items-center gap-2">
+                  {selectedRoom?.status === 'WAITING' && (
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      loading={closing}
+                      onClick={async () => {
+                        if (!selectedRoomId) return
+                        setClosing(true)
+                        try {
+                          await updateChatRoomStatus(selectedRoomId, 'IN_PROGRESS')
+                          toast.success('상태가 진행중으로 변경되었습니다.')
+                          await fetchAllRooms()
+                        } catch {
+                          toast.error('상태 변경에 실패했습니다.')
+                        } finally {
+                          setClosing(false)
+                        }
+                      }}
+                    >
+                      응대 시작
+                    </Button>
+                  )}
+
+                  {selectedRoom?.status !== 'COMPLETED' ? (
+                    <Button variant="danger" size="small" loading={closing} onClick={handleClose}>
+                      문의 종료
+                    </Button>
+                  ) : (
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-400">종료된 문의</span>
+                  )}
+                </div>
               </div>
 
               {/* 메시지 리스트 */}
-              <div className="flex-1 overflow-y-auto bg-gray-50 px-5 py-4 space-y-3">
+              <div className="flex-1 overflow-y-auto bg-slate-100 px-5 py-4 space-y-3">
                 {messagesLoading ? (
                   <LoadingSpinner />
                 ) : messages.length === 0 ? (
@@ -331,10 +369,10 @@ function AdminChatPage() {
                         <div className={['flex flex-col gap-0.5', isMe ? 'items-end' : 'items-start'].join(' ')}>
                           <span className="text-xs text-gray-400">{msg.senderNickname}</span>
                           <div className={[
-                            'max-w-xs rounded-2xl px-4 py-2.5 text-sm break-words',
+                            'max-w-xs rounded-2xl px-4 py-2.5 text-sm break-words shadow-sm',
                             isMe
-                              ? 'rounded-tr-sm bg-brand-700 text-white'
-                              : 'rounded-tl-sm border border-gray-100 bg-white text-gray-800 shadow-sm',
+                              ? 'rounded-tr-sm bg-orange-100 text-gray-900'
+                              : 'rounded-tl-sm border border-blue-100 bg-blue-50 text-gray-900',
                           ].join(' ')}>
                             {msg.content}
                           </div>
@@ -349,7 +387,7 @@ function AdminChatPage() {
 
               {/* 입력창 */}
               <div className="border-t border-gray-100 bg-white px-4 py-3">
-                {selectedRoom?.status === 'CLOSED' ? (
+                {selectedRoom?.status === 'COMPLETED' ? (
                   <p className="py-1 text-center text-xs text-gray-400">종료된 문의입니다.</p>
                 ) : (
                   <div className="flex items-end gap-2">

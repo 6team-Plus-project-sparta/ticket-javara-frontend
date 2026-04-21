@@ -75,10 +75,10 @@ function MessageBubble({
         {/* 말풍선 */}
         <div
           className={[
-            'max-w-xs rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words',
+            'max-w-xs rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words shadow-sm',
             isMe
-              ? 'rounded-tr-sm bg-blue-600 text-white'
-              : 'rounded-tl-sm bg-white border border-gray-100 text-gray-800 shadow-sm',
+              ? 'rounded-tr-sm bg-orange-100 text-gray-900'
+              : 'rounded-tl-sm bg-blue-50 border border-blue-100 text-gray-900',
           ].join(' ')}
         >
           {message.content}
@@ -154,8 +154,14 @@ function ChatPage() {
   // ── 채팅방 생성 (마운트 1회만) ───────────────────────────────
   useEffect(() => {
     createChatRoom()
-      .then(setRoom)
-      .catch(() => toast.error('채팅방을 불러오지 못했습니다.'))
+      .then((room) => {
+        console.log('[ChatPage] 채팅방 생성/조회:', room)
+        setRoom(room)
+      })
+      .catch((e) => {
+        console.error('[ChatPage] 채팅방 생성 실패:', e)
+        toast.error('채팅방을 불러오지 못했습니다.')
+      })
       .finally(() => setRoomLoading(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -239,7 +245,7 @@ function ChatPage() {
   // ── 메시지 전송 ──────────────────────────────────────────────
   const handleSend = async () => {
     const content = inputText.trim()
-    if (!content || !room || room.status === 'CLOSED') return
+    if (!content || !room || room.status === 'COMPLETED') return
     setSending(true)
     try {
       stompSend(content)
@@ -263,7 +269,7 @@ function ChatPage() {
     setClosing(true)
     try {
       await closeChatRoom(room.chatRoomId)
-      setRoom((prev) => prev ? { ...prev, status: 'CLOSED' } : prev)
+      setRoom((prev) => prev ? { ...prev, status: 'COMPLETED' } : prev)
       setCloseModalOpen(false)
       toast.success('문의가 종료되었습니다.')
     } catch {
@@ -295,7 +301,7 @@ function ChatPage() {
     return items
   }
 
-  const isClosed   = room?.status === 'CLOSED'
+  const isClosed   = room?.status === 'COMPLETED'
   const canSend    = connectionStatus === 'connected' && !isClosed && inputText.trim().length > 0
 
   // ── 렌더링 ───────────────────────────────────────────────────
@@ -340,7 +346,7 @@ function ChatPage() {
       <div
         ref={listRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4 space-y-3"
+        className="flex-1 overflow-y-auto bg-slate-100 px-4 py-4 space-y-3"
       >
         {/* 이전 메시지 로딩 */}
         {historyLoading && (

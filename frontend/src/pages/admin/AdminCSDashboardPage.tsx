@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getAdminChatRooms, getChatMessages, closeChatRoom } from '@/api/chat'
+import { getAdminChatRooms, getChatMessages, updateChatRoomStatus } from '@/api/chat'
 import type { AdminChatRoom, ChatMessage } from '@/types/chat'
 import { Button, LoadingSpinner, Modal } from '@/components'
 import { useToast } from '@/components/Toast'
@@ -40,7 +40,7 @@ export default function AdminCSDashboardPage() {
   // 좌측 문의 목록 State
   const [rooms, setRooms] = useState<AdminChatRoom[]>([])
   const [roomsLoading, setRoomsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL')
+  const [activeTab, setActiveTab] = useState<'ALL' | 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'>('ALL')
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
 
   // 우측 채팅 (선택된 채티방) State
@@ -87,7 +87,9 @@ export default function AdminCSDashboardPage() {
   // 초기 문의 목록 로드
   useEffect(() => {
     setRoomsLoading(true)
-    getAdminChatRooms({ size: 50 })
+    // 백엔드 status enum(WAITING/IN_PROGRESS/COMPLETED)과 프론트 탭(OPEN/CLOSED)을 분리한다.
+    // 목록은 전체 조회 후 프론트에서 OPEN/CLOSED를 필터링.
+    getAdminChatRooms({ size: 200 })
       .then(res => setRooms(res.content))
       .catch(() => toast.error('문의 목록을 불러오지 못했습니다.'))
       .finally(() => setRoomsLoading(false))
@@ -168,9 +170,13 @@ export default function AdminCSDashboardPage() {
     if (!selectedRoomId) return
     setClosing(true)
     try {
-      await closeChatRoom(selectedRoomId)
+      await updateChatRoomStatus(selectedRoomId, 'COMPLETED')
       toast.success('문의가 종료되었습니다.')
-      setRooms((prev: AdminChatRoom[]) => prev.map((r: AdminChatRoom) => r.chatRoomId === selectedRoomId ? { ...r, status: 'CLOSED' } : r))
+      setRooms((prev: AdminChatRoom[]) =>
+        prev.map((r: AdminChatRoom) =>
+          r.chatRoomId === selectedRoomId ? { ...r, status: 'COMPLETED' } : r
+        )
+      )
     } catch {
       toast.error('채팅방 종료 중 오류가 발생했습니다.')
     } finally {
@@ -181,7 +187,7 @@ export default function AdminCSDashboardPage() {
   // 필터링 적용된 목록
   const filteredRooms = rooms.filter((r: AdminChatRoom) => activeTab === 'ALL' || r.status === activeTab)
   const selectedRoom = rooms.find((r: AdminChatRoom) => r.chatRoomId === selectedRoomId)
-  const isClosed = selectedRoom?.status === 'CLOSED'
+  const isClosed = selectedRoom?.status === 'COMPLETED'
   const canSend = roomConnectionStatus === 'connected' && !isClosed && inputText.trim().length > 0
   
   return (
@@ -199,13 +205,16 @@ export default function AdminCSDashboardPage() {
         
         {/* 탭 */}
         <div className="flex px-4 py-2 border-b border-gray-100 gap-2 shrink-0 bg-white">
-          {(['ALL', 'OPEN', 'CLOSED'] as const).map(tab => (
+          {(['ALL', 'WAITING', 'IN_PROGRESS', 'COMPLETED'] as const).map(tab => (
             <button 
               key={tab} 
               onClick={() => setActiveTab(tab)}
               className={['text-xs px-3 py-1.5 rounded-full font-semibold transition-colors', activeTab === tab ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'].join(' ')}
             >
-              {tab === 'ALL' ? '전체' : tab === 'OPEN' ? '진행중' : '종료'}
+              {tab === 'ALL' ? '전체'
+                : tab === 'WAITING' ? '대기중'
+                : tab === 'IN_PROGRESS' ? '진행중'
+                : '종료'}
             </button>
           ))}
         </div>
@@ -218,7 +227,7 @@ export default function AdminCSDashboardPage() {
           ) : (
             filteredRooms.map((r: AdminChatRoom) => {
               const isSelected = r.chatRoomId === selectedRoomId
-              const isNew = r.status === 'OPEN' // 임의로 OPEN일 때 테두리 색 다르게 강조
+              const isNew = r.status === 'WAITING' // 대기중일 때 강조(신규 문의 느낌)
 
               return (
                 <button
@@ -227,20 +236,27 @@ export default function AdminCSDashboardPage() {
                   className={[
                     'w-full text-left p-3 rounded-xl border transition-all duration-200 focus:outline-none flex flex-col gap-1',
                     isSelected ? 'bg-blue-50 border-blue-400 shadow-sm' : 'bg-white border-gray-100 shadow-sm hover:border-gray-200 hover:shadow',
-                    r.status === 'OPEN' && !isSelected && 'border-l-4 border-l-orange-400'
+                    r.status === 'WAITING' && !isSelected && 'border-l-4 border-l-orange-400'
                   ].join(' ')}
                 >
                   <div className="flex justify-between items-center w-full">
                     <span className="font-bold text-gray-800 flex items-center gap-1.5 text-sm">
-                      <span className={r.status === 'OPEN' ? 'text-green-500' : 'text-gray-400'}>●</span>
+                      <span className={r.status === 'IN_PROGRESS' ? 'text-green-500' : r.status === 'WAITING' ? 'text-orange-500' : 'text-gray-400'}>●</span>
                       {r.userNickname}
                     </span>
                     <span className="text-xs text-gray-400">{formatTime(r.createdAt)}</span>
                   </div>
                   <div className="flex justify-between items-center w-full">
                     <span className="text-xs text-gray-500 truncate w-4/5">{r.lastMessage || '새로운 문의가 접수되었습니다.'}</span>
-                    <span className={['text-[10px] font-bold px-1.5 py-0.5 rounded', r.status === 'OPEN' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'].join(' ')}>
-                      {r.status}
+                    <span className={[
+                      'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                      r.status === 'WAITING' ? 'bg-orange-100 text-orange-700'
+                        : r.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-500'
+                    ].join(' ')}>
+                      {r.status === 'WAITING' ? '대기중'
+                        : r.status === 'IN_PROGRESS' ? '진행중'
+                        : '종료'}
                     </span>
                   </div>
                 </button>
@@ -262,9 +278,34 @@ export default function AdminCSDashboardPage() {
                 </div>
                 {roomConnectionStatus !== 'connected' && <span className="text-xs text-orange-500 font-medium">연결 시도 중...</span>}
               </div>
-              <Button size="small" variant="secondary" onClick={handleCloseRoom} disabled={isClosed || closing}>
-                {isClosed ? '종료됨' : '문의 종료 ✕'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {selectedRoom?.status === 'WAITING' && (
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    disabled={closing}
+                    onClick={async () => {
+                      if (!selectedRoomId) return
+                      setClosing(true)
+                      try {
+                        await updateChatRoomStatus(selectedRoomId, 'IN_PROGRESS')
+                        setRooms((prev) => prev.map((r) => r.chatRoomId === selectedRoomId ? { ...r, status: 'IN_PROGRESS' } : r))
+                        toast.success('상태가 진행중으로 변경되었습니다.')
+                      } catch {
+                        toast.error('상태 변경에 실패했습니다.')
+                      } finally {
+                        setClosing(false)
+                      }
+                    }}
+                  >
+                    응대 시작
+                  </Button>
+                )}
+
+                <Button size="small" variant="secondary" onClick={handleCloseRoom} disabled={isClosed || closing}>
+                  {isClosed ? '종료됨' : '문의 종료 ✕'}
+                </Button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={listRef} onScroll={handleScroll}>

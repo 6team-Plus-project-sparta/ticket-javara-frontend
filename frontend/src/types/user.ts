@@ -30,14 +30,15 @@ export interface OrderSummaryItem {
 export interface OrderSummary {
   orderId: number
   status: 'CONFIRMED' | 'CANCELLED' | 'PENDING'
-  eventTitle: string
-  eventDate: string
-  venueName: string
   totalAmount: number
   discountAmount: number
   finalAmount: number
-  items: OrderSummaryItem[]
   createdAt: string
+  /** 백엔드 응답에 포함될 경우 선택적 필드 */
+  eventTitle?: string
+  eventDate?: string
+  venueName?: string
+  items?: OrderSummaryItem[]
 }
 
 export interface UserCoupon {

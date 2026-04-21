@@ -2,11 +2,14 @@
 
 export type EventCategory = 'CONCERT' | 'MUSICAL' | 'SPORTS' | 'EXHIBITION' | 'ETC'
 
+export type EventStatus = 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED'
+
 export interface EventListParams {
   page?: number
   size?: number
   sort?: string
   category?: EventCategory
+  status?: EventStatus
 }
 
 export interface EventSearchParams {
@@ -30,6 +33,7 @@ export interface EventSummary {
   minPrice: number
   remainingSeats: number
   thumbnailUrl: string
+  status?: EventStatus   // 백엔드 응답에 포함되는 경우 사용
 }
 
 export interface Venue {

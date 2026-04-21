@@ -26,7 +26,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   ON_SALE:   { label: '예매 중',   className: 'bg-green-100 text-green-700' },
   SOLD_OUT:  { label: '매진',      className: 'bg-red-100 text-red-600' },
   CANCELLED: { label: '취소됨',    className: 'bg-gray-100 text-gray-500' },
-  ENDED:     { label: '종료',      className: 'bg-gray-100 text-gray-500' },
+  ENDED:     { label: '예매종료',  className: 'bg-gray-100 text-gray-500' },
   // 좌석
   AVAILABLE: { label: '선택 가능', className: 'bg-blue-100 text-blue-700' },
   ON_HOLD:   { label: '임시 선점', className: 'bg-yellow-100 text-yellow-700' },
