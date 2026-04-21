@@ -13,7 +13,8 @@
  *   /search?keyword=세븐틴&category=CONCERT&sort=eventDate,asc&page=0
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import axios from 'axios'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { searchEventsV1, searchEventsV2 } from '@/api/events'
 import { getPopularKeywords, clickPopularKeyword } from '@/api/search'
@@ -312,8 +313,12 @@ function SearchResultPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { isLoggedIn } = useAuth()
 
-  // URL 쿼리스트링에서 필터 초기값 읽기
-  const [filters, setFilters] = useState<SearchFilters>(() => paramsToFilters(searchParams))
+  /** 쿼리스트링만 단일 소스로 사용 (로컬 state와 URL 이중 동기화 시 역주입/레이스 방지) */
+  const queryKey = searchParams.toString()
+  const filters = useMemo(
+    () => paramsToFilters(new URLSearchParams(queryKey)),
+    [queryKey],
+  )
 
   // 검색 결과 상태
   const [results, setResults] = useState<EventSummary[]>([])
@@ -328,82 +333,98 @@ function SearchResultPage() {
   const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([])
   const [keywordsLoading, setKeywordsLoading] = useState(true)
 
-  // 필터 변경 → URL 동기화 + 검색 실행
+  // 필터 변경 → URL만 갱신 (함수형 업데이트로 항상 최신 쿼리 기준 병합)
   const updateFilters = useCallback((partial: Partial<SearchFilters>) => {
-    setFilters((prev) => {
-      const next = { ...prev, ...partial }
-      setSearchParams(filtersToParams(next), { replace: true })
-      return next
-    })
+    setSearchParams(
+      (prev) => {
+        const next = { ...paramsToFilters(prev), ...partial }
+        return filtersToParams(next)
+      },
+      { replace: true },
+    )
   }, [setSearchParams])
 
   // 필터 초기화
-  const resetFilters = () => {
-    const reset: SearchFilters = {
-      keyword: filters.keyword, // 검색어는 유지
-      category: '', startDate: '', endDate: '',
-      minPrice: '', maxPrice: '', sort: 'eventDate,asc', page: 0,
-    }
-    setFilters(reset)
-    setSearchParams(filtersToParams(reset), { replace: true })
-  }
+  const resetFilters = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const current = paramsToFilters(prev)
+        const reset: SearchFilters = {
+          keyword: current.keyword,
+          category: '', startDate: '', endDate: '',
+          minPrice: '', maxPrice: '', sort: 'eventDate,asc', page: 0,
+        }
+        return filtersToParams(reset)
+      },
+      { replace: true },
+    )
+  }, [setSearchParams])
 
-  // URL이 외부에서 바뀔 때 (뒤로가기 등) 필터 동기화
+  // 검색 실행 (필터가 바뀔 때마다 이전 in-flight 요청은 abort — 늦게 도착한 응답이 목록을 덮어쓰는 현상 방지)
   useEffect(() => {
-    setFilters(paramsToFilters(searchParams))
-  }, [searchParams])
-
-  // 검색 실행
-  useEffect(() => {
-    if (!filters.keyword.trim()) {
+    const f = paramsToFilters(new URLSearchParams(queryKey))
+    if (!f.keyword.trim()) {
       setResults([])
       setTotalElements(0)
       setTotalPages(0)
+      setCacheStatus(null)
+      setLoading(false)
       return
     }
+
+    const ac = new AbortController()
+    let stale = false
 
     const fetchResults = async () => {
       setLoading(true)
       setCacheStatus(null)
+      const reqOpts = { signal: ac.signal }
       try {
         const params = {
-          keyword:   filters.keyword,
-          ...(filters.category  && { category: filters.category }),
-          ...(filters.startDate && { startDate: filters.startDate }),
-          ...(filters.endDate   && { endDate: filters.endDate }),
-          ...(filters.minPrice  && { minPrice: Number(filters.minPrice) }),
-          ...(filters.maxPrice  && { maxPrice: Number(filters.maxPrice) }),
-          sort: filters.sort,
-          page: filters.page,
+          keyword:   f.keyword,
+          ...(f.category  && { category: f.category }),
+          ...(f.startDate && { startDate: f.startDate }),
+          ...(f.endDate   && { endDate: f.endDate }),
+          ...(f.minPrice  && { minPrice: Number(f.minPrice) }),
+          ...(f.maxPrice  && { maxPrice: Number(f.maxPrice) }),
+          sort: f.sort,
+          page: f.page,
           size: 10,
         }
 
         let pageData: PageResponse<EventSummary>
 
         if (SEARCH_API_VERSION === 'v2') {
-          // v2: X-Cache 헤더 포함 응답
-          const res = await searchEventsV2(params)
+          const res = await searchEventsV2(params, reqOpts)
+          if (stale) return
           pageData = res.data
           setCacheStatus(res.cacheStatus)
         } else {
-          // v1: 캐시 없음
-          pageData = await searchEventsV1(params)
+          pageData = await searchEventsV1(params, reqOpts)
+          if (stale) return
         }
 
         setResults(pageData.content ?? [])
         setTotalPages(pageData.totalPages ?? 0)
         setTotalElements(pageData.totalElements ?? 0)
-      } catch {
+      } catch (e) {
+        if (stale) return
+        if (axios.isAxiosError(e) && e.code === 'ERR_CANCELED') return
         setResults([])
         setTotalPages(0)
         setTotalElements(0)
       } finally {
-        setLoading(false)
+        if (!stale) setLoading(false)
       }
     }
 
-    fetchResults()
-  }, [filters])
+    void fetchResults()
+
+    return () => {
+      stale = true
+      ac.abort()
+    }
+  }, [queryKey])
 
   // 인기 검색어 조회 (최초 1회)
   useEffect(() => {
