@@ -2,16 +2,35 @@
 import apiClient from './client'
 import type { PopularKeyword } from '../types/search'
 
+/** 백엔드 공통 응답 래퍼 */
+interface ApiWrapper<T> {
+  data: T
+  code: string
+  message: string
+}
+
+function unwrap<T>(data: ApiWrapper<T> | T): T {
+  const d = data as ApiWrapper<T>
+  return d?.data !== undefined ? d.data : (data as T)
+}
+
 // 인기 검색어 목록 조회
-// TODO: 백엔드 /api/search/popular 엔드포인트 구현 전까지 빈 배열 반환
 export const getPopularKeywords = async (): Promise<PopularKeyword[]> => {
-  return []
+  const response = await apiClient.get<ApiWrapper<PopularKeyword[]>>('/search/popular')
+  return unwrap(response.data)
 }
 
 // 인기 검색어 클릭 이벤트 전송
-// TODO: 백엔드 /api/search/popular/click 엔드포인트 구현 전까지 no-op
 export const clickPopularKeyword = async (
-  _keyword: string
+  keyword: string
 ): Promise<{ message: string; keyword: string }> => {
-  return { message: '', keyword: _keyword }
+  const response = await apiClient.post<ApiWrapper<{ message?: string; keyword?: string }>>(
+    '/search/popular/click',
+    { keyword }
+  )
+  const result = unwrap(response.data)
+  return {
+    message: result?.message ?? 'ok',
+    keyword: result?.keyword ?? keyword,
+  }
 }
