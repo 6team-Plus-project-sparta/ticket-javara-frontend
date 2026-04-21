@@ -52,7 +52,9 @@ const formatPrice = (price: number) => `${price.toLocaleString('ko-KR')}원`
 function getCancelErrorMessage(error: unknown): string {
   const code = (error as AxiosError<{ code: string }>).response?.data?.code
   switch (code) {
-    case 'CANCEL_PERIOD_EXPIRED':    return '취소 가능 기간이 지났습니다. (공연 시작 24시간 전까지)'
+    case 'CANCEL_PERIOD_EXPIRED':
+    case 'O004':  // ← 추가
+      return '취소 가능 기간이 지났습니다. (공연 시작 24시간 전까지)'
     case 'ORDER_ALREADY_CANCELLED':  return '이미 취소된 주문입니다.'
     case 'ORDER_NOT_OWNED':          return '본인의 주문만 취소할 수 있습니다.'
     default:                         return '취소 처리 중 오류가 발생했습니다.'
