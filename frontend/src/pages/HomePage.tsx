@@ -251,6 +251,8 @@ function HomePage() {
                 // status 필드가 없는 경우 날짜/잔여석으로 클라이언트 필터링
                 if (selectedStatus === 'ON_SALE') {
                     content = content.filter((e) => resolveCardStatus(e) === 'ON_SALE')
+                } else if (selectedStatus === 'SOLD_OUT') {
+                    content = content.filter((e) => resolveCardStatus(e) === 'SOLD_OUT')
                 } else if (selectedStatus === 'ALL') {
                     // 전체 탭: ENDED/CANCELLED 제외 (예매중 + 매진만)
                     content = content.filter((e) => {

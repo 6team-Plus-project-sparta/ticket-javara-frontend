@@ -3,7 +3,7 @@ import { Client } from '@stomp/stompjs'
 import { getToken } from '@/utils/storage'
 import { AdminChatRoom } from '@/types/chat'
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws-stomp'
+const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:8080/ws-stomp'
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
@@ -20,7 +20,11 @@ export function useStompAdmin(onNewRoom: (roomInfo: AdminChatRoom) => void) {
     setConnectionStatus('connecting')
 
     const client = new Client({
-      brokerURL: WS_URL,
+      webSocketFactory: () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new (window as any).SockJS(WS_URL)
+      },
+      // brokerURL 제거
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       reconnectDelay: 5000,
       onConnect: () => {
