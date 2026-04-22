@@ -3,6 +3,7 @@
  * 사용 예시: import { Button, Input, Modal, Toast } from '@/components'
  */
 
+export { default as CarouselBanner }    from './CarouselBanner'
 export { default as Button }            from './Button'
 export { default as Input }             from './Input'
 export { default as Header }            from './Header'
