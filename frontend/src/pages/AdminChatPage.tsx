@@ -70,13 +70,13 @@ function StatCard({
       className={[
         'flex flex-1 items-center justify-between rounded-xl border px-5 py-4 text-left transition-all',
         active
-          ? 'border-primary-300 bg-primary-50 shadow-sm'
+          ? 'border-orange-400 bg-orange-50 shadow-sm'
           : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm',
       ].join(' ')}
     >
       <div>
         <p className="text-xs font-medium text-gray-400">{label}</p>
-        <p className={['mt-1 text-2xl font-extrabold', active ? 'text-primary-600' : 'text-gray-800'].join(' ')}>
+        <p className={['mt-1 text-2xl font-extrabold', active ? 'text-orange-600' : 'text-gray-800'].join(' ')}>
           {count}
         </p>
       </div>
@@ -255,7 +255,7 @@ function AdminChatPage() {
                       onClick={() => setSelectedRoomId(room.chatRoomId)}
                       className={[
                         'w-full border-b border-gray-50 px-4 py-3 text-left transition-colors',
-                        selectedRoomId === room.chatRoomId ? 'bg-primary-50' : 'hover:bg-gray-50',
+                        selectedRoomId === room.chatRoomId ? 'bg-orange-50' : 'hover:bg-gray-50',
                       ].join(' ')}
                     >
                       <div className="flex items-center justify-between mb-1">

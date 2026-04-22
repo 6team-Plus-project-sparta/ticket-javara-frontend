@@ -137,7 +137,7 @@ function CouponCard({
           </div>
         </div>
       ) : (
-        <div className="relative bg-gradient-to-br from-blue-600 to-indigo-600 px-6 py-8 text-white">
+        <div className="relative bg-gradient-to-br from-coupon-500 to-coupon-700 px-6 py-8 text-white">
           <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" aria-hidden="true" />
           <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" aria-hidden="true" />
           {coupon.badgeLabel && (

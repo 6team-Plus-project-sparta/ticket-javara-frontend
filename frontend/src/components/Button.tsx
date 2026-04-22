@@ -20,7 +20,7 @@ const sizeClass = {
 }
 
 const variantClass = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300',
+  primary: 'bg-[#c43535] text-white hover:bg-[#a82e2e] disabled:bg-[#d88a8a]',
   secondary: 'bg-gray-100 text-gray-800 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400',
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
   ghost: 'bg-transparent text-blue-600 border border-blue-600 hover:bg-blue-50 disabled:opacity-40',
