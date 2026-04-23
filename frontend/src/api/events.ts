@@ -7,6 +7,8 @@ import type {
   EventDetail,
   CreateEventRequest,
   CreateEventResponse,
+  EventStatusUpdateRequest,
+  EventStatusUpdateResponse,
 } from '../types/event'
 import type { PageResponse } from '../types/common'
 
@@ -80,5 +82,17 @@ export const searchEventsV2 = async (
 // 이벤트 생성 (관리자)
 export const createEvent = async (data: CreateEventRequest): Promise<CreateEventResponse> => {
   const response = await apiClient.post<ApiWrapper<CreateEventResponse>>('/admin/events', data)
+  return unwrap(response.data)
+}
+
+// 이벤트 상태 변경 (관리자)
+export const updateEventStatus = async (
+  eventId: number,
+  data: EventStatusUpdateRequest
+): Promise<EventStatusUpdateResponse> => {
+  const response = await apiClient.patch<ApiWrapper<EventStatusUpdateResponse>>(
+    `/admin/events/${eventId}/status`,
+    data
+  )
   return unwrap(response.data)
 }

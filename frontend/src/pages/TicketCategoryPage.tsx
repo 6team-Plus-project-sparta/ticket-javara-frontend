@@ -1,6 +1,6 @@
 /**
  * TicketCategoryPage — 카테고리별 이벤트 목록
- * URL: /ticket/:category (concert | musical | sports | exhibition | etc)
+ * URL: /ticket/:category (concert | musical | sports | display | etc)
  */
 
 import { useEffect, useState } from 'react'
@@ -15,7 +15,7 @@ const CATEGORY_LABEL: Record<string, string> = {
     concert:    '콘서트',
     musical:    '뮤지컬',
     sports:     '스포츠',
-    exhibition: '전시',
+    display:    '전시',
     etc:        '기타',
 }
 
