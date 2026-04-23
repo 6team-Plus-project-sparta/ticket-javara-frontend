@@ -1,13 +1,15 @@
 /**
  * Header 컴포넌트
  * - 상단: 로고 + 검색창 + 고객센터 + 로그인/마이페이지
- * - 하단 탭: 홈 / 티켓 / 쿠폰
+ * - 하단 탭: 홈 / 티켓 / 쿠폰 + 실시간 인기검색어 롤링
  * - 티켓 탭 hover 또는 활성 시 서브메뉴(콘서트~기타) 가로 표시
  */
 
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from './Button'
+import { getPopularKeywords } from '@/api/search'
+import type { PopularKeyword } from '@/types/search'
 
 interface HeaderProps {
   isLoggedIn?: boolean
@@ -30,6 +32,58 @@ const ticketSubMenuItems = [
   { label: '기타',   value: 'etc' },
 ]
 
+// ─── 실시간 인기검색어 롤링 컴포넌트 ──────────────────────────
+
+function RollingKeywords() {
+  const navigate = useNavigate()
+  const [keywords, setKeywords]   = useState<PopularKeyword[]>([])
+  const [currentIdx, setCurrentIdx] = useState(0)
+  const [visible, setVisible]     = useState(true)
+
+  useEffect(() => {
+    getPopularKeywords()
+        .then(setKeywords)
+        .catch(() => setKeywords([]))
+  }, [])
+
+  // 3초마다 다음 키워드로 롤링 (fade out → 인덱스 변경 → fade in)
+  useEffect(() => {
+    if (keywords.length === 0) return
+    const interval = setInterval(() => {
+      setVisible(false)
+      setTimeout(() => {
+        setCurrentIdx((prev) => (prev + 1) % keywords.length)
+        setVisible(true)
+      }, 300)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [keywords])
+
+  if (keywords.length === 0) return null
+
+  const current = keywords[currentIdx]
+
+  return (
+      <div className="ml-auto flex items-center gap-2 text-sm">
+        <span className="text-xs font-bold text-[#FD002D] shrink-0">실시간 인기 검색어</span>
+        <button
+            onClick={() => navigate(`/search?keyword=${encodeURIComponent(current.keyword)}`)}
+            className={[
+              'flex items-center gap-1.5 transition-opacity duration-300 hover:text-[#FD002D]',
+              visible ? 'opacity-100' : 'opacity-0',
+            ].join(' ')}
+            style={{ width: '100px' }}
+            aria-label={`${current.rank}위 ${current.keyword} 검색`}
+        >
+          <span className="font-bold text-[#FD002D] w-4 text-center">{current.rank}</span>
+          <span className="text-gray-700 font-medium truncate max-w-[120px]">{current.keyword}</span>
+        </button>
+      </div>
+  )
+}
+
+// ─── 메인 Header ─────────────────────────────────────────────
+
 function Header({ isLoggedIn = false, isAdmin = false, onLogout, searchSlot }: HeaderProps) {
   const loc      = useLocation()
   const navigate = useNavigate()
@@ -40,7 +94,6 @@ function Header({ isLoggedIn = false, isAdmin = false, onLogout, searchSlot }: H
       ? loc.pathname.split('/ticket/')[1]
       : null
 
-  // 서브메뉴 표시 조건: 티켓 탭 hover 중이거나 티켓 페이지 활성 중
   const showSubMenu = ticketHovered || isTicketActive
 
   return (
@@ -107,7 +160,7 @@ function Header({ isLoggedIn = false, isAdmin = false, onLogout, searchSlot }: H
           </div>
         </div>
 
-        {/* ── 하단: 메인 탭 ── */}
+        {/* ── 하단: 메인 탭 + 실시간 인기검색어 ── */}
         <div className="border-b border-gray-200 bg-white">
           <div className="mx-auto flex w-full max-w-screen-xl items-center px-10 sm:px-16">
             <nav aria-label="주요 메뉴">
@@ -160,10 +213,13 @@ function Header({ isLoggedIn = false, isAdmin = false, onLogout, searchSlot }: H
                 })}
               </ul>
             </nav>
+
+            {/* 실시간 인기검색어 롤링 — 탭 오른쪽 끝 */}
+            <RollingKeywords />
           </div>
         </div>
 
-        {/* ── 티켓 서브메뉴 — hover 또는 티켓 페이지 활성 시 표시 ── */}
+        {/* ── 티켓 서브메뉴 ── */}
         {showSubMenu && (
             <div
                 className="border-b border-gray-100 bg-gray-50"
