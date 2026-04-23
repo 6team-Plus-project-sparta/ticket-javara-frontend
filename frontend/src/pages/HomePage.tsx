@@ -3,13 +3,14 @@
  *
  * 구성 요소:
  * 1. 히어로 배너
- * 2. 인기 검색어
- * 3. 카테고리 + 정렬 필터
- * 4. 이벤트 카드 목록 (3열 그리드)
- * 5. 페이지네이션
+ * 2. 장르별 랭킹
+ * 3. 인기 검색어
+ * 4. 카테고리 + 정렬 필터
+ * 5. 이벤트 카드 목록 (3열 그리드)
+ * 6. 페이지네이션
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getEvents } from '@/api/events'
 import { getPopularKeywords, clickPopularKeyword } from '@/api/search'
@@ -29,6 +30,14 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const CATEGORIES: { label: string; value: EventCategory | 'ALL' }[] = [
     { label: '전체',   value: 'ALL' },
+    { label: '콘서트', value: 'CONCERT' },
+    { label: '뮤지컬', value: 'MUSICAL' },
+    { label: '스포츠', value: 'SPORTS' },
+    { label: '전시',   value: 'EXHIBITION' },
+    { label: '기타',   value: 'ETC' },
+]
+
+const GENRE_TABS: { label: string; value: EventCategory }[] = [
     { label: '콘서트', value: 'CONCERT' },
     { label: '뮤지컬', value: 'MUSICAL' },
     { label: '스포츠', value: 'SPORTS' },
@@ -69,16 +78,124 @@ const formatEventDate = (dateStr: string) => {
 
 const formatPrice = (price: number) => `${price.toLocaleString('ko-KR')}원~`
 
-/**
- * 이벤트 카드 상태 계산
- * 백엔드 status 필드가 있으면 그대로 사용,
- * 없으면 eventDate + remainingSeats 로 추론
- */
 function resolveCardStatus(event: EventSummary): EventStatus {
     if (event.status) return event.status
     if (new Date(event.eventDate).getTime() < Date.now()) return 'ENDED'
     if (event.remainingSeats === 0) return 'SOLD_OUT'
     return 'ON_SALE'
+}
+
+// ─── 장르별 랭킹 섹션 ────────────────────────────────────────
+
+function GenreRanking({ onEventClick }: { onEventClick: (eventId: number) => void }) {
+    const [activeGenre, setActiveGenre] = useState<EventCategory>('CONCERT')
+    const [rankEvents, setRankEvents]   = useState<EventSummary[]>([])
+    const [rankLoading, setRankLoading] = useState(true)
+
+    const fetchRanking = useCallback(async (category: EventCategory) => {
+        setRankLoading(true)
+        try {
+            const res = await getEvents({
+                status: 'ON_SALE',
+                category,
+                    sort: 'createdAt,desc',
+                size: 5,
+                page: 0,
+            })
+            setRankEvents(res.content ?? [])
+        } catch {
+            setRankEvents([])
+        } finally {
+            setRankLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchRanking(activeGenre)
+    }, [activeGenre, fetchRanking])
+
+    const handleGenreChange = (genre: EventCategory) => {
+        setActiveGenre(genre)
+    }
+
+    return (
+        <section aria-label="장르별 랭킹" className="space-y-4">
+            <h2 className="text-2xl font-extrabold text-gray-900 text-center">🏆 장르별 랭킹</h2>
+
+            {/* 장르 탭 */}
+            <div className="flex justify-center gap-1 border-b border-gray-200" role="tablist" aria-label="장르 선택">
+                {GENRE_TABS.map((tab) => (
+                    <button
+                        key={tab.value}
+                        role="tab"
+                        aria-selected={activeGenre === tab.value}
+                        onClick={() => handleGenreChange(tab.value)}
+                        className={[
+                            'px-6 py-2.5 text-base font-semibold border-b-2 transition-colors whitespace-nowrap',
+                            activeGenre === tab.value
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-400 hover:text-gray-600',
+                        ].join(' ')}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* 랭킹 목록 */}
+            {rankLoading ? (
+                <div className="py-8"><LoadingSpinner /></div>
+            ) : rankEvents.length === 0 ? (
+                <div className="py-8 text-center text-sm text-gray-400">
+                    현재 예매 중인 공연이 없습니다.
+                </div>
+            ) : (
+                <div className="grid grid-cols-5 gap-4">
+                    {rankEvents.map((event, idx) => (
+                        <button
+                            key={event.eventId}
+                            onClick={() => onEventClick(event.eventId)}
+                            className="w-full text-left group focus:outline-none"
+                            aria-label={`${idx + 1}위 ${event.title}`}
+                        >
+                            {/* 썸네일 */}
+                            <div className="relative mb-2 overflow-hidden rounded-xl bg-gray-100" style={{ aspectRatio: '2/3' }}>
+                                {event.thumbnailUrl ? (
+                                    <img
+                                        src={event.thumbnailUrl}
+                                        alt={event.title}
+                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    />
+                                ) : (
+                                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                        </svg>
+                                    </div>
+                                )}
+                                {/* 순위 배지 */}
+                                <div className={[
+                                    'absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold shadow',
+                                    idx === 0 ? 'bg-yellow-400 text-white' :
+                                        idx === 1 ? 'bg-gray-300 text-gray-700' :
+                                            idx === 2 ? 'bg-amber-600 text-white' :
+                                                'bg-white/80 text-gray-600',
+                                ].join(' ')}>
+                                    {idx + 1}
+                                </div>
+                            </div>
+                            {/* 텍스트 정보 */}
+                            <p className="text-xs text-gray-400 truncate">{event.venueName}</p>
+                            <p className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
+                                {event.title}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-blue-600">{formatPrice(event.minPrice)}</p>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </section>
+    )
 }
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────
@@ -109,12 +226,12 @@ function PopularKeywordsCard({
                                 onClick={() => onKeywordClick(kw.keyword)}
                                 className="flex w-full items-center gap-2.5 rounded-md px-2 py-1 text-left text-sm hover:bg-gray-50 transition-colors"
                             >
-                <span className={[
-                    'w-5 shrink-0 text-center text-xs font-bold',
-                    kw.rank <= 3 ? 'text-blue-600' : 'text-gray-400',
-                ].join(' ')}>
-                  {kw.rank}
-                </span>
+                                <span className={[
+                                    'w-5 shrink-0 text-center text-xs font-bold',
+                                    kw.rank <= 3 ? 'text-blue-600' : 'text-gray-400',
+                                ].join(' ')}>
+                                    {kw.rank}
+                                </span>
                                 <span className="flex-1 truncate text-gray-700">{kw.keyword}</span>
                             </button>
                         </li>
@@ -158,15 +275,13 @@ function EventCard({ event, onClick }: { event: EventSummary; onClick: () => voi
                         </svg>
                     </div>
                 )}
-                {/* 매진/종료 오버레이 */}
                 {(isSoldOut || isEnded) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700">
-              {isSoldOut ? '매진' : '종료됨'}
-            </span>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700">
+                            {isSoldOut ? '매진' : '종료됨'}
+                        </span>
                     </div>
                 )}
-                {/* 상태 배지 */}
                 <div className="absolute left-2 top-2">
                     <StatusBadge status={cardStatus} />
                 </div>
@@ -201,16 +316,16 @@ function HomePage() {
     const { isLoggedIn, user } = useAuth()
     const isAdmin = user?.role === 'ADMIN'
 
-    const [events, setEvents]             = useState<EventSummary[]>([])
-    const [totalPages, setTotalPages]     = useState(0)
+    const [events, setEvents]               = useState<EventSummary[]>([])
+    const [totalPages, setTotalPages]       = useState(0)
     const [totalElements, setTotalElements] = useState(0)
-    const [currentPage, setCurrentPage]   = useState(0)
+    const [currentPage, setCurrentPage]     = useState(0)
     const [eventsLoading, setEventsLoading] = useState(true)
 
     const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'ALL'>(
         () => (searchParams.get('category') as EventCategory) || 'ALL'
     )
-    const [selectedSort, setSelectedSort]     = useState('eventDate,asc')
+    const [selectedSort, setSelectedSort] = useState('createdAt,desc')
     const [selectedStatus, setSelectedStatus] = useState<'ALL' | EventStatus>('ON_SALE')
 
     const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([])
@@ -248,13 +363,11 @@ function HomePage() {
 
                 let content = res.content ?? []
 
-                // status 필드가 없는 경우 날짜/잔여석으로 클라이언트 필터링
                 if (selectedStatus === 'ON_SALE') {
                     content = content.filter((e) => resolveCardStatus(e) === 'ON_SALE')
                 } else if (selectedStatus === 'SOLD_OUT') {
                     content = content.filter((e) => resolveCardStatus(e) === 'SOLD_OUT')
                 } else if (selectedStatus === 'ALL') {
-                    // 전체 탭: ENDED/CANCELLED 제외 (예매중 + 매진만)
                     content = content.filter((e) => {
                         const s = resolveCardStatus(e)
                         return s !== 'ENDED' && s !== 'CANCELLED'
@@ -308,6 +421,9 @@ function HomePage() {
         <div className="space-y-8">
 
             <CarouselBanner onBookingClick={() => navigate('/?status=ON_SALE')} />
+
+            {/* 장르별 랭킹 */}
+            <GenreRanking onEventClick={(id) => navigate(`/events/${id}`)} />
 
             <div className="md:hidden">
                 <SearchBar onSearch={handleSearch} />
@@ -405,7 +521,7 @@ function HomePage() {
                     )}
                 </div>
 
-                <aside className="w-full lg:w-64 shrink-0 space-y-4">
+                <aside className="w-full lg:w-64 shrink-0 space-y-4 lg:mt-36">
                     <PopularKeywordsCard
                         keywords={popularKeywords}
                         loading={keywordsLoading}

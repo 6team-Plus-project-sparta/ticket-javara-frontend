@@ -34,6 +34,10 @@
  * *  → NotFoundPage
  */
 
+/**
+ * Router.tsx — 전체 라우팅 구조 정의
+ */
+
 import { Routes, Route } from 'react-router-dom'
 
 import MainLayout from '@/layouts/MainLayout'
@@ -41,83 +45,83 @@ import AuthLayout from '@/layouts/AuthLayout'
 import ProtectedRoute from './ProtectedRoute'
 import PublicOnlyRoute from './PublicOnlyRoute'
 
-import HomePage            from '@/pages/HomePage'
-import SearchResultPage    from '@/pages/SearchResultPage'
-import EventDetailPage     from '@/pages/EventDetailPage'
-import SeatSelectionPage   from '@/pages/SeatSelectionPage'
-import OrderPaymentPage    from '@/pages/OrderPaymentPage'
-import PaymentCompletePage from '@/pages/PaymentCompletePage'
-import MyPage              from '@/pages/MyPage'
-import BookingListPage     from '@/pages/BookingListPage'
-import CouponListPage      from '@/pages/CouponListPage'
-import EditProfilePage     from '@/pages/EditProfilePage'
-import CouponIssuePage     from '@/pages/CouponIssuePage'
-import CouponEventPage     from '@/pages/CouponEventPage'
-import ChatRouterPage      from '@/pages/ChatRouterPage'
-import LoginPage           from '@/pages/LoginPage'
-import SignupPage          from '@/pages/SignupPage'
-import AdminPage           from '@/pages/AdminPage'
-import NotFoundPage        from '@/pages/NotFoundPage'
-import AdminLayout         from '@/layouts/AdminLayout'
-import AdminRoute          from './AdminRoute'
-import AdminEventPage      from '@/pages/admin/AdminEventPage'
-import AdminCouponPage     from '@/pages/admin/AdminCouponPage'
-import AdminCSDashboardPage from '@/pages/admin/AdminCSDashboardPage'
+import HomePage              from '@/pages/HomePage'
+import SearchResultPage      from '@/pages/SearchResultPage'
+import EventDetailPage       from '@/pages/EventDetailPage'
+import SeatSelectionPage     from '@/pages/SeatSelectionPage'
+import OrderPaymentPage      from '@/pages/OrderPaymentPage'
+import PaymentCompletePage   from '@/pages/PaymentCompletePage'
+import MyPage                from '@/pages/MyPage'
+import BookingListPage       from '@/pages/BookingListPage'
+import CouponListPage        from '@/pages/CouponListPage'
+import EditProfilePage       from '@/pages/EditProfilePage'
+import CouponIssuePage       from '@/pages/CouponIssuePage'
+import CouponEventPage       from '@/pages/CouponEventPage'
+import ChatRouterPage        from '@/pages/ChatRouterPage'
+import LoginPage             from '@/pages/LoginPage'
+import SignupPage            from '@/pages/SignupPage'
+import AdminPage             from '@/pages/AdminPage'
+import NotFoundPage          from '@/pages/NotFoundPage'
+import AdminLayout           from '@/layouts/AdminLayout'
+import AdminRoute            from './AdminRoute'
+import AdminEventPage        from '@/pages/admin/AdminEventPage'
+import AdminCouponPage       from '@/pages/admin/AdminCouponPage'
+import AdminCSDashboardPage  from '@/pages/admin/AdminCSDashboardPage'
+import TicketCategoryPage    from '@/pages/TicketCategoryPage'
 
 function Router() {
-  return (
-    <Routes>
+    return (
+        <Routes>
 
-      {/* ── Header가 있는 메인 레이아웃 ── */}
-      <Route element={<MainLayout />}>
+            {/* ── Header가 있는 메인 레이아웃 ── */}
+            <Route element={<MainLayout />}>
 
-        {/* 공개 라우트 — 누구나 접근 가능 */}
-        <Route path="/"             element={<HomePage />} />
-        <Route path="/search"       element={<SearchResultPage />} />
-        <Route path="/events/:eventId" element={<EventDetailPage />} />
-        <Route path="/coupons"      element={<CouponEventPage />} />
+                {/* 공개 라우트 — 누구나 접근 가능 */}
+                <Route path="/"                    element={<HomePage />} />
+                <Route path="/search"              element={<SearchResultPage />} />
+                <Route path="/events/:eventId"     element={<EventDetailPage />} />
+                <Route path="/coupons"             element={<CouponEventPage />} />
+                <Route path="/ticket"              element={<TicketCategoryPage />} />
+                <Route path="/ticket/:category"    element={<TicketCategoryPage />} />
 
-        {/* 인증 필요 라우트 — 로그인 안 됐으면 /login으로 이동 */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/events/:eventId/seats"    element={<SeatSelectionPage />} />
-          <Route path="/orders/payment"           element={<OrderPaymentPage />} />
-          <Route path="/orders/:orderId/complete" element={<PaymentCompletePage />} />
-          <Route path="/mypage"                   element={<MyPage />} />
-          <Route path="/mypage/bookings"          element={<BookingListPage />} />
-          <Route path="/mypage/coupons"           element={<CouponListPage />} />
-          <Route path="/mypage/edit"              element={<EditProfilePage />} />
-          <Route path="/coupon/issue"             element={<CouponIssuePage />} />
-          <Route path="/chat"                     element={<ChatRouterPage />} />
-          <Route path="/admin"                    element={<AdminPage />} />
-        </Route>
+                {/* 인증 필요 라우트 */}
+                <Route element={<ProtectedRoute />}>
+                    <Route path="/events/:eventId/seats"    element={<SeatSelectionPage />} />
+                    <Route path="/orders/payment"           element={<OrderPaymentPage />} />
+                    <Route path="/orders/:orderId/complete" element={<PaymentCompletePage />} />
+                    <Route path="/mypage"                   element={<MyPage />} />
+                    <Route path="/mypage/bookings"          element={<BookingListPage />} />
+                    <Route path="/mypage/coupons"           element={<CouponListPage />} />
+                    <Route path="/mypage/edit"              element={<EditProfilePage />} />
+                    <Route path="/coupon/issue"             element={<CouponIssuePage />} />
+                    <Route path="/chat"                     element={<ChatRouterPage />} />
+                    <Route path="/admin"                    element={<AdminPage />} />
+                </Route>
 
-      </Route>
+            </Route>
 
-      {/* ── Header 없는 인증 전용 레이아웃 ── */}
-      <Route element={<AuthLayout />}>
+            {/* ── Header 없는 인증 전용 레이아웃 ── */}
+            <Route element={<AuthLayout />}>
+                <Route element={<PublicOnlyRoute />}>
+                    <Route path="/login"  element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
+                </Route>
+            </Route>
 
-        {/* 비로그인 전용 — 이미 로그인했으면 /로 이동 */}
-        <Route element={<PublicOnlyRoute />}>
-          <Route path="/login"  element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-        </Route>
+            {/* ── 관리자 전용 레이아웃 ── */}
+            <Route element={<AdminRoute />}>
+                <Route element={<AdminLayout />}>
+                    <Route path="/admin/events"  element={<AdminEventPage />} />
+                    <Route path="/admin/coupons" element={<AdminCouponPage />} />
+                    <Route path="/admin/chat"    element={<AdminCSDashboardPage />} />
+                </Route>
+            </Route>
 
-      </Route>
+            {/* 404 */}
+            <Route path="*" element={<NotFoundPage />} />
 
-      {/* ── 관리자 전용 레이아웃 ── */}
-      <Route element={<AdminRoute />}>
-        <Route element={<AdminLayout />}>
-          <Route path="/admin/events"  element={<AdminEventPage />} />
-          <Route path="/admin/coupons" element={<AdminCouponPage />} />
-          <Route path="/admin/chat"    element={<AdminCSDashboardPage />} />
-        </Route>
-      </Route>
-
-      {/* 404 */}
-      <Route path="*" element={<NotFoundPage />} />
-
-    </Routes>
-  )
+        </Routes>
+    )
 }
 
 export default Router
