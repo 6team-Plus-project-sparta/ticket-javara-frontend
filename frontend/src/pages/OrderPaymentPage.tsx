@@ -48,6 +48,7 @@ function loadTossScript(): Promise<void> {
     const script = document.createElement('script')
     script.id = 'toss-payments-sdk'
     script.src = 'https://js.tosspayments.com/v1/payment'
+    script.type = 'module'
     script.onload = () => resolve()
     script.onerror = () => reject(new Error('토스페이먼츠 SDK 로드 실패'))
     document.head.appendChild(script)
