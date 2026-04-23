@@ -196,7 +196,7 @@ function GenreRanking({ onEventClick }: { onEventClick: (eventId: number) => voi
 
             {/* 전체보기 버튼 */}
             {!rankLoading && rankEvents.length > 0 && (
-                <div className="flex justify-center mt-4">
+                <div className="flex justify-center mt-20">
                     <button
                         onClick={() => navigate(`/ticket/${activeGenre.toLowerCase()}`)}
                         className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-600 hover:border-[#FD002D] hover:text-[#FD002D] transition-colors"
