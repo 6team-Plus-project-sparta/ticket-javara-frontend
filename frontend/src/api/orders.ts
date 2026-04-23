@@ -56,5 +56,5 @@ export const confirmTossPayment = async (
       `/orders/${data.orderId}/confirm-payment`,
       { paymentKey: data.paymentKey, amount: data.amount, tossOrderId: data.tossOrderId }
   )
-  return response.data
+  return unwrap(response.data)
 }
