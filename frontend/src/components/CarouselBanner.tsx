@@ -96,7 +96,7 @@ export default function CarouselBanner({ onBookingClick }: CarouselBannerProps) 
 
     // ── ON_SALE 공연 상위 5개 로드 ────────────────────────────
     useEffect(() => {
-        getEvents({ status: 'ON_SALE', sort: 'eventDate,asc', size: 5, page: 0 })
+        getEvents({ status: 'ON_SALE', sort: 'createdAt,desc', size: 5, page: 0 })
             .then((res) => setSlides(res.content ?? []))
             .catch(() => setSlides([]))
             .finally(() => setLoading(false))

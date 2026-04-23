@@ -1,8 +1,8 @@
 // 이벤트 관련 타입 정의 - 목록, 상세, 검색, 생성
 
-export type EventCategory = 'CONCERT' | 'MUSICAL' | 'SPORTS' | 'EXHIBITION' | 'ETC'
+export type EventCategory = 'CONCERT' | 'MUSICAL' | 'DISPLAY' | 'SPORTS' | 'ETC'
 
-export type EventStatus = 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED'
+export type EventStatus = 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED' | 'DELETED' | 'DELETED'
 
 export interface EventListParams {
   page?: number
@@ -92,4 +92,24 @@ export interface CreateEventResponse {
   title: string
   totalSeats: number
   sectionsCreated: number
+}
+
+/** PATCH /api/admin/events/{eventId}/status 요청 */
+export interface EventStatusUpdateRequest {
+  status: EventStatus
+}
+
+/** PATCH /api/admin/events/{eventId}/status 응답 */
+export interface EventStatusUpdateResponse {
+  eventId: number
+  status: EventStatus
+}
+
+/** 상태별 허용 전환 맵 (백엔드 Event.java와 동일) */
+export const ALLOWED_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
+  ON_SALE:   ['SOLD_OUT', 'CANCELLED', 'DELETED'],
+  SOLD_OUT:  ['ON_SALE', 'CANCELLED', 'DELETED'],
+  CANCELLED: ['DELETED'],
+  ENDED:     ['DELETED'],
+  DELETED:   [],
 }

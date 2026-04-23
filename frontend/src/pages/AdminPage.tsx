@@ -10,12 +10,13 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createEvent } from '@/api/events'
+import { createEvent, updateEventStatus, getEvents } from '@/api/events'
 import { createCoupon, getCouponMetrics } from '@/api/coupons'
-import type { EventCategory, CreateEventSectionInput } from '@/types/event'
+import type { EventCategory, CreateEventSectionInput, EventStatus, EventSummary, ALLOWED_STATUS_TRANSITIONS } from '@/types/event'
+import { ALLOWED_STATUS_TRANSITIONS as STATUS_TRANSITIONS } from '@/types/event'
 import type { CouponMetrics } from '@/types/coupon'
 import type { AxiosError } from 'axios'
-import { Button, Input } from '@/components'
+import { Button, Input, StatusBadge, LoadingSpinner } from '@/components'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/Toast'
 
@@ -25,7 +26,7 @@ const CATEGORIES: { label: string; value: EventCategory }[] = [
   { label: '콘서트',   value: 'CONCERT' },
   { label: '뮤지컬',   value: 'MUSICAL' },
   { label: '스포츠',   value: 'SPORTS' },
-  { label: '전시',     value: 'EXHIBITION' },
+  { label: '전시',     value: 'DISPLAY' },
   { label: '기타',     value: 'ETC' },
 ]
 
@@ -350,9 +351,108 @@ function CouponMetricsForm() {
   )
 }
 
+// ─── 이벤트 상태 변경 폼 ──────────────────────────────────────
+
+const STATUS_LABELS: Record<EventStatus, string> = {
+  ON_SALE:   '예매중',
+  SOLD_OUT:  '매진',
+  CANCELLED: '취소됨',
+  ENDED:     '종료됨',
+  DELETED:   '삭제됨',
+}
+
+function EventStatusForm() {
+  const { toast } = useToast()
+  const [events, setEvents]       = useState<EventSummary[]>([])
+  const [loading, setLoading]     = useState(false)
+  const [updating, setUpdating]   = useState<number | null>(null)
+  const [fetched, setFetched]     = useState(false)
+
+  const fetchAllEvents = async () => {
+    setLoading(true)
+    try {
+      const res = await getEvents({ page: 0, size: 200, sort: 'createdAt,desc' })
+      setEvents(res.content ?? [])
+      setFetched(true)
+    } catch {
+      toast.error('이벤트 목록을 불러오지 못했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleStatusChange = async (eventId: number, newStatus: EventStatus) => {
+    setUpdating(eventId)
+    try {
+      await updateEventStatus(eventId, { status: newStatus })
+      toast.success(`이벤트 #${eventId} 상태가 ${STATUS_LABELS[newStatus]}(으)로 변경되었습니다.`)
+      // 목록 갱신
+      await fetchAllEvents()
+    } catch (error) {
+      const msg = (error as AxiosError<{ message?: string }>).response?.data?.message ?? '상태 변경에 실패했습니다.'
+      toast.error(msg)
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {!fetched ? (
+        <div className="text-center py-8">
+          <Button onClick={fetchAllEvents} loading={loading}>이벤트 목록 불러오기</Button>
+        </div>
+      ) : loading ? (
+        <LoadingSpinner />
+      ) : events.length === 0 ? (
+        <p className="text-center text-sm text-gray-400 py-8">이벤트가 없습니다.</p>
+      ) : (
+        <div className="space-y-3">
+          {events.map((event) => {
+            const currentStatus = (event.status ?? 'ON_SALE') as EventStatus
+            const allowed = STATUS_TRANSITIONS[currentStatus] ?? []
+
+            return (
+              <div key={event.eventId} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
+                    <p className="text-xs text-gray-400">#{event.eventId} · {event.category}</p>
+                  </div>
+                  <StatusBadge status={currentStatus} />
+                </div>
+
+                {allowed.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {allowed.map((target) => (
+                      <Button
+                        key={target}
+                        size="small"
+                        variant={target === 'DELETED' || target === 'CANCELLED' ? 'danger' : 'secondary'}
+                        loading={updating === event.eventId}
+                        onClick={() => handleStatusChange(event.eventId, target)}
+                      >
+                        → {STATUS_LABELS[target]}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {allowed.length === 0 && (
+                  <p className="text-xs text-gray-400 mt-1">상태 변경 불가</p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── 메인 컴포넌트 ────────────────────────────────────────────
 
-type Tab = 'event' | 'coupon' | 'metrics'
+type Tab = 'event' | 'coupon' | 'metrics' | 'status'
 
 function AdminPage() {
   const { user }    = useAuth()
@@ -382,6 +482,7 @@ function AdminPage() {
       <div className="flex gap-2 border-b border-gray-200">
         {([
           { key: 'event',   label: '🎫 이벤트 등록' },
+          { key: 'status',  label: '🔄 상태 변경' },
           { key: 'coupon',  label: '🏷 쿠폰 등록' },
           { key: 'metrics', label: '📊 쿠폰 메트릭스' },
         ] as { key: Tab; label: string }[]).map((tab) => (
@@ -402,6 +503,7 @@ function AdminPage() {
 
       {/* 탭 콘텐츠 */}
       {activeTab === 'event'   && <EventCreateForm />}
+      {activeTab === 'status'  && <EventStatusForm />}
       {activeTab === 'coupon'  && <CouponCreateForm />}
       {activeTab === 'metrics' && <CouponMetricsForm />}
 
