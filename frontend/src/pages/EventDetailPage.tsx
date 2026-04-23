@@ -31,7 +31,7 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
   CONCERT:    '콘서트',
   MUSICAL:    '뮤지컬/연극',
   SPORTS:     '스포츠',
-  EXHIBITION: '전시',
+  DISPLAY:    '전시',
   ETC:        '기타',
 }
 
