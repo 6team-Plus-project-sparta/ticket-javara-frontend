@@ -25,7 +25,7 @@ const CATEGORIES: { label: string; value: EventCategory }[] = [
   { label: '콘서트',   value: 'CONCERT' },
   { label: '뮤지컬',   value: 'MUSICAL' },
   { label: '스포츠',   value: 'SPORTS' },
-  { label: '전시',     value: 'EXHIBITION' },
+  { label: '전시',     value: 'DISPLAY' },
   { label: '기타',     value: 'ETC' },
 ]
 
