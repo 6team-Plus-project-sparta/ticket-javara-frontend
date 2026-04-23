@@ -26,7 +26,7 @@ const ticketSubMenuItems = [
   { label: '콘서트', value: 'concert' },
   { label: '뮤지컬', value: 'musical' },
   { label: '스포츠', value: 'sports' },
-  { label: '전시',   value: 'exhibition' },
+  { label: '전시',   value: 'display' },
   { label: '기타',   value: 'etc' },
 ]
 

@@ -33,7 +33,7 @@ const CATEGORIES: { label: string; value: EventCategory | 'ALL' }[] = [
     { label: '콘서트', value: 'CONCERT' },
     { label: '뮤지컬', value: 'MUSICAL' },
     { label: '스포츠', value: 'SPORTS' },
-    { label: '전시',   value: 'EXHIBITION' },
+    { label: '전시',   value: 'DISPLAY' },
     { label: '기타',   value: 'ETC' },
 ]
 
@@ -41,7 +41,7 @@ const GENRE_TABS: { label: string; value: EventCategory }[] = [
     { label: '콘서트', value: 'CONCERT' },
     { label: '뮤지컬', value: 'MUSICAL' },
     { label: '스포츠', value: 'SPORTS' },
-    { label: '전시',   value: 'EXHIBITION' },
+    { label: '전시',   value: 'DISPLAY' },
     { label: '기타',   value: 'ETC' },
 ]
 
@@ -88,6 +88,7 @@ function resolveCardStatus(event: EventSummary): EventStatus {
 // ─── 장르별 랭킹 섹션 ────────────────────────────────────────
 
 function GenreRanking({ onEventClick }: { onEventClick: (eventId: number) => void }) {
+    const navigate = useNavigate()
     const [activeGenre, setActiveGenre] = useState<EventCategory>('CONCERT')
     const [rankEvents, setRankEvents]   = useState<EventSummary[]>([])
     const [rankLoading, setRankLoading] = useState(true)
@@ -98,7 +99,7 @@ function GenreRanking({ onEventClick }: { onEventClick: (eventId: number) => voi
             const res = await getEvents({
                 status: 'ON_SALE',
                 category,
-                    sort: 'createdAt,desc',
+                sort: 'createdAt,desc',
                 size: 5,
                 page: 0,
             })
@@ -114,9 +115,7 @@ function GenreRanking({ onEventClick }: { onEventClick: (eventId: number) => voi
         fetchRanking(activeGenre)
     }, [activeGenre, fetchRanking])
 
-    const handleGenreChange = (genre: EventCategory) => {
-        setActiveGenre(genre)
-    }
+    const activeLabel = GENRE_TABS.find(t => t.value === activeGenre)?.label ?? ''
 
     return (
         <section aria-label="장르별 랭킹" className="space-y-4">
@@ -129,11 +128,11 @@ function GenreRanking({ onEventClick }: { onEventClick: (eventId: number) => voi
                         key={tab.value}
                         role="tab"
                         aria-selected={activeGenre === tab.value}
-                        onClick={() => handleGenreChange(tab.value)}
+                        onClick={() => setActiveGenre(tab.value)}
                         className={[
                             'px-6 py-2.5 text-base font-semibold border-b-2 transition-colors whitespace-nowrap',
                             activeGenre === tab.value
-                                ? 'border-blue-500 text-blue-600'
+                                ? 'border-[#FD002D] text-[#FD002D]'
                                 : 'border-transparent text-gray-400 hover:text-gray-600',
                         ].join(' ')}
                     >
@@ -186,12 +185,27 @@ function GenreRanking({ onEventClick }: { onEventClick: (eventId: number) => voi
                             </div>
                             {/* 텍스트 정보 */}
                             <p className="text-xs text-gray-400 truncate">{event.venueName}</p>
-                            <p className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
+                            <p className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-[#FD002D] transition-colors leading-snug">
                                 {event.title}
                             </p>
-                            <p className="mt-1 text-xs font-bold text-blue-600">{formatPrice(event.minPrice)}</p>
+                            <p className="mt-1 text-xs font-bold text-[#FD002D]">{formatPrice(event.minPrice)}</p>
                         </button>
                     ))}
+                </div>
+            )}
+
+            {/* 전체보기 버튼 */}
+            {!rankLoading && rankEvents.length > 0 && (
+                <div className="flex justify-center mt-4">
+                    <button
+                        onClick={() => navigate(`/ticket/${activeGenre.toLowerCase()}`)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-600 hover:border-[#FD002D] hover:text-[#FD002D] transition-colors"
+                    >
+                        {activeLabel} 전체보기
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
                 </div>
             )}
         </section>
@@ -228,7 +242,7 @@ function PopularKeywordsCard({
                             >
                                 <span className={[
                                     'w-5 shrink-0 text-center text-xs font-bold',
-                                    kw.rank <= 3 ? 'text-blue-600' : 'text-gray-400',
+                                    kw.rank <= 3 ? 'text-[#FD002D]' : 'text-gray-400',
                                 ].join(' ')}>
                                     {kw.rank}
                                 </span>
@@ -289,12 +303,12 @@ function EventCard({ event, onClick }: { event: EventSummary; onClick: () => voi
 
             <div className="p-4">
                 <p className="mb-1 text-xs text-gray-400">{event.venueName}</p>
-                <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-[#FD002D] transition-colors">
                     {event.title}
                 </h3>
                 <p className="mb-3 text-xs text-gray-500">{formatEventDate(event.eventDate)}</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-blue-600">{formatPrice(event.minPrice)}</span>
+                    <span className="text-sm font-bold text-[#FD002D]">{formatPrice(event.minPrice)}</span>
                     {isSoldOut ? (
                         <span className="text-xs font-semibold text-red-500">매진</span>
                     ) : isEnded ? (
@@ -325,7 +339,7 @@ function HomePage() {
     const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'ALL'>(
         () => (searchParams.get('category') as EventCategory) || 'ALL'
     )
-    const [selectedSort, setSelectedSort] = useState('createdAt,desc')
+    const [selectedSort, setSelectedSort]     = useState('createdAt,desc')
     const [selectedStatus, setSelectedStatus] = useState<'ALL' | EventStatus>('ON_SALE')
 
     const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([])
@@ -443,7 +457,7 @@ function HomePage() {
                                 className={[
                                     'px-4 py-2 text-sm font-semibold border-b-2 transition-colors',
                                     selectedStatus === tab.value
-                                        ? 'border-blue-500 text-blue-600'
+                                        ? 'border-[#FD002D] text-[#FD002D]'
                                         : 'border-transparent text-gray-400 hover:text-gray-600',
                                 ].join(' ')}
                             >
@@ -462,8 +476,8 @@ function HomePage() {
                                 className={[
                                     'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                                     selectedCategory === cat.value
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-400 hover:text-blue-600',
+                                        ? 'bg-[#FD002D] text-white'
+                                        : 'bg-white text-gray-600 border border-gray-200 hover:border-[#FD002D] hover:text-[#FD002D]',
                                 ].join(' ')}
                             >
                                 {cat.label}
@@ -480,7 +494,7 @@ function HomePage() {
                             value={selectedSort}
                             onChange={(e) => handleSortChange(e.target.value)}
                             aria-label="정렬 기준"
-                            className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FD002D]"
                         >
                             {SORT_OPTIONS.map((opt) => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
