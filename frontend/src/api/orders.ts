@@ -52,7 +52,7 @@ export const cancelOrder = async (orderId: number): Promise<void> => {
 export const confirmTossPayment = async (
     data: ConfirmTossPaymentRequest
 ): Promise<ConfirmTossPaymentResponse> => {
-  const response = await apiClient.post<ConfirmTossPaymentResponse>(
+  const response = await apiClient.post<ApiWrapper<ConfirmTossPaymentResponse>>(  // ← 이 부분
       `/orders/${data.orderId}/confirm-payment`,
       { paymentKey: data.paymentKey, amount: data.amount, tossOrderId: data.tossOrderId }
   )
