@@ -33,7 +33,7 @@ export interface EventSummary {
   minPrice: number
   remainingSeats: number
   thumbnailUrl: string
-  status?: EventStatus   // 백엔드 응답에 포함되는 경우 사용
+  eventStatus?: EventStatus   // 백엔드 응답 필드명과 일치
 }
 
 export interface Venue {

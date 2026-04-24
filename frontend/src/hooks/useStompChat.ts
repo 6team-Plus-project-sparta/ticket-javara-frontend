@@ -20,7 +20,16 @@ interface UseStompChatReturn {
   disconnect: () => void
 }
 
-const WS_ENDPOINT = (import.meta.env.VITE_WS_URL ?? 'http://localhost:8080/ws-stomp') as string
+const WS_ENDPOINT = (() => {
+  // 환경 변수에서 WebSocket URL 가져오기
+  const envWsUrl = import.meta.env.VITE_WS_URL
+  if (envWsUrl) return envWsUrl
+  
+  // 환경 변수가 없으면 현재 프로토콜에 맞춰 자동 설정
+  const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
+  const host = window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host
+  return `${protocol}//${host}/ws-stomp`
+})()
 
 export function useStompChat({
   chatRoomId,
