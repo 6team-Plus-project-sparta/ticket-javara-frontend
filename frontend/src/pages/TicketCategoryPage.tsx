@@ -37,7 +37,7 @@ const formatEventDate = (dateStr: string) =>
 const formatPrice = (price: number) => `${price.toLocaleString('ko-KR')}원~`
 
 function resolveCardStatus(event: EventSummary): EventStatus {
-    if (event.status) return event.status
+    if (event.eventStatus) return event.eventStatus
     if (new Date(event.eventDate).getTime() < Date.now()) return 'ENDED'
     if (event.remainingSeats === 0) return 'SOLD_OUT'
     return 'ON_SALE'
@@ -141,7 +141,7 @@ function TicketCategoryPage() {
                     size: 12,
                     sort: selectedSort,
                     category: currentCategory,
-                    status: 'ON_SALE',
+                    // status 파라미터 제거 - 모든 상태의 이벤트 표시
                 })
                 setEvents(res.content ?? [])
                 setTotalPages(res.totalPages ?? 0)

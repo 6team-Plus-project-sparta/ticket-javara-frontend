@@ -79,7 +79,7 @@ const formatEventDate = (dateStr: string) => {
 const formatPrice = (price: number) => `${price.toLocaleString('ko-KR')}원~`
 
 function resolveCardStatus(event: EventSummary): EventStatus {
-    if (event.status) return event.status
+    if (event.eventStatus) return event.eventStatus
     if (new Date(event.eventDate).getTime() < Date.now()) return 'ENDED'
     if (event.remainingSeats === 0) return 'SOLD_OUT'
     return 'ON_SALE'
@@ -375,20 +375,9 @@ function HomePage() {
                     ...(selectedStatus !== 'ALL' && { status: selectedStatus }),
                 })
 
-                let content = res.content ?? []
-
-                if (selectedStatus === 'ON_SALE') {
-                    content = content.filter((e) => resolveCardStatus(e) === 'ON_SALE')
-                } else if (selectedStatus === 'SOLD_OUT') {
-                    content = content.filter((e) => resolveCardStatus(e) === 'SOLD_OUT')
-                } else if (selectedStatus === 'ALL') {
-                    content = content.filter((e) => {
-                        const s = resolveCardStatus(e)
-                        return s !== 'ENDED' && s !== 'CANCELLED'
-                    })
-                }
-
-                setEvents(content)
+                // 백엔드에서 이미 status 파라미터로 필터링된 데이터를 받음
+                // 추가 필터링 없이 그대로 사용
+                setEvents(res.content ?? [])
                 setTotalPages(res.totalPages ?? 0)
                 setTotalElements(res.totalElements ?? 0)
             } catch {
