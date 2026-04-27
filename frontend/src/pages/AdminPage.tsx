@@ -460,8 +460,10 @@ function EventStatusForm() {
             <>
               <div className="space-y-3">
                 {filteredEvents.map((event) => {
+
                   const currentStatus: EventStatus = event.eventStatus ?? 'ON_SALE'
                   const allowed: EventStatus[] = STATUS_TRANSITIONS[currentStatus] ?? []
+
 
                   return (
                     <div key={event.eventId} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -476,6 +478,7 @@ function EventStatusForm() {
                       {allowed.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {allowed.map((target: EventStatus) => (
+
                             <Button
                               key={target}
                               size="small"
