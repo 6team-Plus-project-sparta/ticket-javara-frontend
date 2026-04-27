@@ -46,7 +46,7 @@
 | 언어 | TypeScript | 5.7 |
 | 빌드 도구 | Vite | 6.0 |
 | 라우팅 | react-router-dom | 6.28 |
-| HTTP 클라이언트 | axios | 1.7 |
+| HTTP 클라이언트 | axios | 1.15.0 |
 | 스타일링 | TailwindCSS | 3.4 |
 | WebSocket | @stomp/stompjs + SockJS | 7.3 |
 
