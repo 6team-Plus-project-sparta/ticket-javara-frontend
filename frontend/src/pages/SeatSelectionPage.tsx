@@ -45,7 +45,15 @@ interface HeldSeat {
 // ─── 에러 코드 → 메시지 ──────────────────────────────────────
 
 function getHoldErrorMessage(error: unknown): string {
-  const code = (error as AxiosError<{ code: string }>).response?.data?.code
+  const axiosErr = error as AxiosError<{ code?: string; message?: string; data?: { code?: string; message?: string } }>
+  const responseData = axiosErr.response?.data
+
+  // 백엔드 메시지 우선 사용 (래퍼 구조 대응)
+  const serverMessage = responseData?.message ?? responseData?.data?.message
+  if (serverMessage) return serverMessage
+
+  // 서버 메시지 없으면 코드 기반 fallback
+  const code = responseData?.code ?? responseData?.data?.code
   switch (code) {
     case 'HOLD_LIMIT_EXCEEDED':    return '최대 4석까지만 선택할 수 있습니다.'
     case 'SEAT_LOCK_FAILED':       return '다른 사용자가 처리 중입니다. 다른 좌석을 선택해주세요.'

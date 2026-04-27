@@ -367,12 +367,23 @@ function EventStatusForm() {
   const [loading, setLoading]     = useState(false)
   const [updating, setUpdating]   = useState<number | null>(null)
   const [fetched, setFetched]     = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages]   = useState(0)
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<EventStatus | 'ALL'>('ALL')
 
-  const fetchAllEvents = async () => {
+  const fetchAllEvents = async (page: number = 0) => {
     setLoading(true)
     try {
-      const res = await getEvents({ page: 0, size: 200, sort: 'createdAt,desc' })
+      const res = await getEvents({ 
+        page, 
+        size: 20, 
+        sort: 'createdAt,desc',
+        ...(statusFilter !== 'ALL' && { status: statusFilter })
+      })
       setEvents(res.content ?? [])
+      setTotalPages(res.totalPages ?? 0)
+      setCurrentPage(page)
       setFetched(true)
     } catch {
       toast.error('이벤트 목록을 불러오지 못했습니다.')
@@ -387,7 +398,7 @@ function EventStatusForm() {
       await updateEventStatus(eventId, { status: newStatus })
       toast.success(`이벤트 #${eventId} 상태가 ${STATUS_LABELS[newStatus]}(으)로 변경되었습니다.`)
       // 목록 갱신
-      await fetchAllEvents()
+      await fetchAllEvents(currentPage)
     } catch (error) {
       const msg = (error as AxiosError<{ message?: string }>).response?.data?.message ?? '상태 변경에 실패했습니다.'
       toast.error(msg)
@@ -396,55 +407,123 @@ function EventStatusForm() {
     }
   }
 
+  const handleStatusFilterChange = (status: EventStatus | 'ALL') => {
+    setStatusFilter(status)
+    setFetched(false)
+    setCurrentPage(0)
+  }
+
+  const filteredEvents = searchKeyword
+    ? events.filter(e => e.title.toLowerCase().includes(searchKeyword.toLowerCase()))
+    : events
+
   return (
     <div className="space-y-4">
       {!fetched ? (
         <div className="text-center py-8">
-          <Button onClick={fetchAllEvents} loading={loading}>이벤트 목록 불러오기</Button>
+          <Button onClick={() => fetchAllEvents(0)} loading={loading}>이벤트 목록 불러오기</Button>
         </div>
-      ) : loading ? (
-        <LoadingSpinner />
-      ) : events.length === 0 ? (
-        <p className="text-center text-sm text-gray-400 py-8">이벤트가 없습니다.</p>
       ) : (
-        <div className="space-y-3">
-          {events.map((event) => {
-            const currentStatus = (event.status ?? 'ON_SALE') as EventStatus
-            const allowed = STATUS_TRANSITIONS[currentStatus] ?? []
+        <>
+          {/* 필터 및 검색 */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex gap-2 flex-wrap">
+              {(['ALL', 'ON_SALE', 'SOLD_OUT', 'ENDED', 'CANCELLED', 'DELETED'] as const).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => handleStatusFilterChange(status)}
+                  className={[
+                    'px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
+                    statusFilter === status
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ].join(' ')}
+                >
+                  {status === 'ALL' ? '전체' : STATUS_LABELS[status]}
+                </button>
+              ))}
+            </div>
+            <Input
+              type="text"
+              placeholder="이벤트 제목 검색..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="flex-1"
+            />
+          </div>
 
-            return (
-              <div key={event.eventId} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
-                    <p className="text-xs text-gray-400">#{event.eventId} · {event.category}</p>
-                  </div>
-                  <StatusBadge status={currentStatus} />
-                </div>
+          {loading ? (
+            <LoadingSpinner />
+          ) : filteredEvents.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-8">이벤트가 없습니다.</p>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {filteredEvents.map((event) => {
+                  const currentStatus = event.eventStatus
+                  const allowed = STATUS_TRANSITIONS[currentStatus] ?? []
 
-                {allowed.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {allowed.map((target) => (
-                      <Button
-                        key={target}
-                        size="small"
-                        variant={target === 'DELETED' || target === 'CANCELLED' ? 'danger' : 'secondary'}
-                        loading={updating === event.eventId}
-                        onClick={() => handleStatusChange(event.eventId, target)}
-                      >
-                        → {STATUS_LABELS[target]}
-                      </Button>
-                    ))}
-                  </div>
-                )}
+                  return (
+                    <div key={event.eventId} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
+                          <p className="text-xs text-gray-400">#{event.eventId} · {event.category}</p>
+                        </div>
+                        <StatusBadge status={currentStatus} />
+                      </div>
 
-                {allowed.length === 0 && (
-                  <p className="text-xs text-gray-400 mt-1">상태 변경 불가</p>
-                )}
+                      {allowed.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {allowed.map((target) => (
+                            <Button
+                              key={target}
+                              size="small"
+                              variant={target === 'DELETED' || target === 'CANCELLED' ? 'danger' : 'secondary'}
+                              loading={updating === event.eventId}
+                              onClick={() => handleStatusChange(event.eventId, target)}
+                            >
+                              → {STATUS_LABELS[target]}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+
+                      {allowed.length === 0 && (
+                        <p className="text-xs text-gray-400 mt-1">상태 변경 불가</p>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
-            )
-          })}
-        </div>
+
+              {/* 페이지네이션 */}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-6">
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    disabled={currentPage === 0}
+                    onClick={() => fetchAllEvents(currentPage - 1)}
+                  >
+                    이전
+                  </Button>
+                  <span className="px-4 py-2 text-sm text-gray-600">
+                    {currentPage + 1} / {totalPages}
+                  </span>
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    disabled={currentPage >= totalPages - 1}
+                    onClick={() => fetchAllEvents(currentPage + 1)}
+                  >
+                    다음
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </>
       )}
     </div>
   )
