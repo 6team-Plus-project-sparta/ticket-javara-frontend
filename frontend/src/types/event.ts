@@ -2,7 +2,7 @@
 
 export type EventCategory = 'CONCERT' | 'MUSICAL' | 'DISPLAY' | 'SPORTS' | 'ETC'
 
-export type EventStatus = 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED' | 'DELETED' | 'DELETED'
+export type EventStatus = 'ON_SALE' | 'SOLD_OUT' | 'CANCELLED' | 'ENDED' | 'DELETED'
 
 export interface EventListParams {
   page?: number
