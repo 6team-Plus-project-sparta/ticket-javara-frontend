@@ -261,6 +261,7 @@ function EventCard({ event, onClick }: { event: EventSummary; onClick: () => voi
 
     const cardStatus: string = event.eventStatus ?? resolveCardStatus(event)
 
+
     const isSoldOut  = cardStatus === 'SOLD_OUT'
     const isEnded    = cardStatus === 'ENDED' || cardStatus === 'CANCELLED'
     const isDisabled = isSoldOut || isEnded
