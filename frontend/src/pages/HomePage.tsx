@@ -258,7 +258,7 @@ function PopularKeywordsCard({
 
 function EventCard({ event, onClick }: { event: EventSummary; onClick: () => void }) {
     // 백엔드에서 보낸 eventStatus를 그대로 사용
-    const cardStatus = event.eventStatus
+    const cardStatus: string = event.eventStatus ?? resolveCardStatus(event)
     const isSoldOut  = cardStatus === 'SOLD_OUT'
     const isEnded    = cardStatus === 'ENDED' || cardStatus === 'CANCELLED'
     const isDisabled = isSoldOut || isEnded
