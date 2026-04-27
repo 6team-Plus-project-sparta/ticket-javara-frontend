@@ -1,6 +1,6 @@
 # 🎫 티켓을 JAVA라 — 프론트엔드
 
-> **TicketFlow** 공연·스포츠 티켓 예매 플랫폼의 프론트엔드 프로젝트
+> **티켓을 JAVA라** 공연·스포츠 티켓 예매 플랫폼의 프론트엔드 프로젝트
 
 스파르타 내일배움캠프 Spring 3기 · CH5 스프링 플러스 프로젝트 · **Team HOT6**
 
@@ -23,6 +23,18 @@
 | 💬 CS 채팅 | WebSocket(STOMP + SockJS) 기반 실시간 고객↔관리자 채팅 |
 | 👤 마이페이지 | 예매 내역 조회, 주문 취소, 쿠폰 관리, 프로필 수정 |
 | ⚙️ 관리자 | 이벤트 등록/상태 변경, 쿠폰 등록/메트릭스, CS 대시보드 |
+
+---
+
+### 주요 화면
+
+| 메인 페이지 | 이벤트 상세 | 좌석 선택 |
+|---|---|---|
+| <img src="https://github.com/user-attachments/assets/4149bba5-313f-49cb-8ad4-d9792b8a924f" width="100%" alt="메인 페이지" /> | <img src="https://github.com/user-attachments/assets/2cfbbae0-8c97-47d4-907a-934a0b455e25" width="100%" alt="이벤트 상세" /> | <img src="https://github.com/user-attachments/assets/e0c7f913-8dca-4213-a64a-f5faf023e719" width="100%" alt="좌석 선택" /> |
+
+| 주문 | 마이페이지 | 관리자 페이지 |
+|---|---|---|
+| <img src="https://github.com/user-attachments/assets/a75528e2-cd02-46be-ad1d-3c436b2068c5" width="100%" height="320" alt="주문" /> | <img src="https://github.com/user-attachments/assets/40d35979-9932-4806-b378-47b319187d38" width="100%" height="320" alt="마이페이지" /> | <img src="https://github.com/user-attachments/assets/3f0b102c-9b35-483d-b62a-161251522f42" width="100%" height="320" alt="관리자 페이지" /> |
 
 ---
 
